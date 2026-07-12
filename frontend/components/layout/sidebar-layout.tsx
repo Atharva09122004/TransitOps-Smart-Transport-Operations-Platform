@@ -17,7 +17,8 @@ import {
   Menu,
   X,
   LayoutDashboard,
-  FileText
+  FileText,
+  Settings
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -34,7 +35,8 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
   { name: "Trips", href: "/trips", icon: Compass },
   { name: "Maintenance", href: "/maintenance", icon: Wrench },
   { name: "Fuel", href: "/fuel", icon: Fuel },
-  { name: "Reports", href: "/reports", icon: FileText }
+  { name: "Reports", href: "/reports", icon: FileText },
+  { name: "Settings", href: "/settings", icon: Settings }
 ];
 
 export default function SidebarLayout({

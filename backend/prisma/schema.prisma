@@ -203,3 +203,11 @@ model TripRevenue {
   revenue   Decimal  @default(0) @db.Decimal(14, 2)
   createdAt DateTime @default(now())
 }
+
+model SystemSettings {
+  id           Int      @id @default(autoincrement())
+  depotName    String   @default("Gandhinagar Depot, GJ")
+  currency     String   @default("INR (Rs)")
+  distanceUnit String   @default("Kilometers")
+  updatedAt    DateTime @updatedAt
+}

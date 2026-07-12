@@ -9,6 +9,7 @@ const fuelRoutes = require("./routes/fuel.routes");
 const dashboardRoutes = require("./routes/dashboard.routes");
 const expenseRoutes = require("./routes/expense.routes");
 const reportRoutes = require("./routes/report.routes");
+const settingsRoutes = require("./routes/settings.routes");
 
 const app = express();
 
@@ -31,5 +32,6 @@ app.use("/api/fuel", fuelRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/expenses", expenseRoutes);
 app.use("/api/reports", reportRoutes);
+app.use("/api/settings", settingsRoutes);
 
 module.exports = app;
