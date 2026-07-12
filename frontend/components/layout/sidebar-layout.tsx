@@ -41,7 +41,7 @@ const ROLE_MENU_ITEMS: Record<string, string[]> = {
   // Fleet Manager: fleet assets + maintenance
   FLEET_MANAGER: ["Dashboard", "Vehicles", "Maintenance", "Settings"],
   // Dispatcher: dispatch queue only
-  DISPATCHER: ["Dashboard", "Trips"],
+  DISPATCHER: ["Dashboard", "Trips", "Drivers"],
   // Safety Officer: driver roster + compliance (maintenance)
   SAFETY_OFFICER: ["Dashboard", "Drivers", "Maintenance"],
   // Financial Analyst: costs + reporting
