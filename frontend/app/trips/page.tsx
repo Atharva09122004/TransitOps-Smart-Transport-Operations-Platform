@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Plus, Loader2, RefreshCw } from "lucide-react";
+import { Plus, Loader2, RefreshCw, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import TripTable from "@/components/trips/TripTable";
 import TripForm from "@/components/trips/TripForm";
@@ -13,6 +13,7 @@ import { Trip } from "@/types/trip";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import axios from "axios";
+import { exportTripPDF } from "@/utils/pdfExport";
 
 export default function TripsPage() {
   const router = useRouter();
@@ -20,6 +21,23 @@ export default function TripsPage() {
   // Component states
   const [trips, setTrips] = React.useState<Trip[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
+  const [isPdfGenerating, setIsPdfGenerating] = React.useState(false);
+
+  const handleExportPDF = async () => {
+    if (trips.length === 0) {
+      toast.error("No data available to export.");
+      return;
+    }
+    setIsPdfGenerating(true);
+    try {
+      exportTripPDF(trips);
+      toast.success("Trips report exported to PDF successfully");
+    } catch (error: any) {
+      toast.error("Failed to export PDF: " + error.message);
+    } finally {
+      setIsPdfGenerating(false);
+    }
+  };
 
   // Form Modal States (Create / Edit)
   const [isFormOpen, setIsFormOpen] = React.useState(false);
@@ -180,6 +198,21 @@ export default function TripsPage() {
           >
             <RefreshCw className={`size-4 ${isLoading ? "animate-spin" : ""}`} />
           </button>
+
+          {/* Export PDF button */}
+          <Button
+            onClick={handleExportPDF}
+            disabled={isLoading || trips.length === 0 || isPdfGenerating}
+            variant="outline"
+            className="h-10 text-xs px-3 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 font-semibold flex items-center gap-1.5 shadow-sm bg-white dark:bg-zinc-900"
+          >
+            {isPdfGenerating ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Download className="size-4" />
+            )}
+            <span>Export PDF</span>
+          </Button>
           {/* Plan Trip Button */}
           <Button
             onClick={handleAddClick}

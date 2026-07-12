@@ -25,8 +25,8 @@ const createTripFormSchema = z.object({
   tripCode: z.string().trim().min(1, "Trip code is required"),
   source: z.string().trim().min(1, "Source is required"),
   destination: z.string().trim().min(1, "Destination is required"),
-  vehicleId: z.number({ required_error: "Vehicle is required" }).int().positive(),
-  driverId: z.number({ required_error: "Driver is required" }).int().positive(),
+  vehicleId: z.number({ message: "Vehicle is required" }).int().positive(),
+  driverId: z.number({ message: "Driver is required" }).int().positive(),
   cargoWeightKg: z.number().positive("Cargo weight must be greater than 0"),
   plannedDistanceKm: z.number().positive("Planned distance must be greater than 0"),
   etaMinutes: z.number().int().positive("ETA must be greater than 0"),
@@ -81,11 +81,11 @@ export default function TripForm({
         .then(([vehiclesRes, driversRes]) => {
           if (vehiclesRes.success && Array.isArray(vehiclesRes.vehicles)) {
             // Keep active and available vehicles for new trip creation
-            setVehicles(vehiclesRes.vehicles.filter((v) => v.status !== "RETIRED"));
+            setVehicles(vehiclesRes.vehicles.filter((v: any) => v.status !== "RETIRED"));
           }
           if (driversRes.success && Array.isArray(driversRes.drivers)) {
             // Keep active drivers
-            setDrivers(driversRes.drivers.filter((d) => d.isActive));
+            setDrivers(driversRes.drivers.filter((d: any) => d.isActive));
           }
         })
         .catch(() => {
@@ -265,7 +265,7 @@ export default function TripForm({
             </label>
             <Select 
               value={vehicleId} 
-              onValueChange={setVehicleId}
+              onValueChange={(val) => setVehicleId(val || "")}
               disabled={isEditMode || loadingAssets}
             >
               <SelectTrigger className="w-full h-10 flex justify-between items-center bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-sm focus-visible:border-zinc-900 rounded-md">
@@ -286,12 +286,12 @@ export default function TripForm({
 
           {/* Driver Selector (Disabled in Edit) */}
           <div className="space-y-1">
-            <label className="text-[10px] font-semibold text-zinc-550 dark:text-zinc-400 uppercase tracking-wider block">
+            <label className="text-[10px] font-semibold text-zinc-555 dark:text-zinc-400 uppercase tracking-wider block">
               Driver Assignee
             </label>
             <Select 
               value={driverId} 
-              onValueChange={setDriverId}
+              onValueChange={(val) => setDriverId(val || "")}
               disabled={isEditMode || loadingAssets}
             >
               <SelectTrigger className="w-full h-10 flex justify-between items-center bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-sm focus-visible:border-zinc-900 rounded-md">

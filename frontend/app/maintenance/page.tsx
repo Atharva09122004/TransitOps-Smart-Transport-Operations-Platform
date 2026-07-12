@@ -68,7 +68,7 @@ export default function MaintenancePage() {
     try {
       const res = await completeMaintenance(id);
       if (res.success) {
-        toast.success(res.message || "Maintenance record marked as completed");
+        toast.success((res as any).message || "Maintenance record marked as completed");
         loadRecords(); // Refresh list immediately
       }
     } catch (error: any) {

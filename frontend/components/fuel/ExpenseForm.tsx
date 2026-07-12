@@ -18,8 +18,8 @@ import { Vehicle } from "@/types/vehicle";
 import { toast } from "sonner";
 
 const expenseFormSchema = z.object({
-  tripId: z.number({ required_error: "Trip ID is required" }).int().positive("Trip ID must be a positive integer"),
-  vehicleId: z.number({ required_error: "Vehicle is required" }).int().positive(),
+  tripId: z.number({ message: "Trip ID is required" }).int().positive("Trip ID must be a positive integer"),
+  vehicleId: z.number({ message: "Vehicle is required" }).int().positive(),
   tollCost: z.number().nonnegative("Cost must be non-negative"),
   otherCost: z.number().nonnegative("Cost must be non-negative"),
   maintenanceCleared: z.boolean(),
@@ -60,7 +60,7 @@ export default function ExpenseForm({
       getVehicles()
         .then((res) => {
           if (res.success && Array.isArray(res.vehicles)) {
-            setVehicles(res.vehicles.filter((v) => v.status !== "RETIRED"));
+            setVehicles(res.vehicles.filter((v: any) => v.status !== "RETIRED"));
           }
         })
         .catch(() => {
@@ -169,7 +169,7 @@ export default function ExpenseForm({
               <label className="text-[10px] font-semibold text-zinc-555 dark:text-zinc-400 uppercase tracking-wider block">
                 Vehicle
               </label>
-              <Select value={vehicleId} onValueChange={setVehicleId}>
+              <Select value={vehicleId} onValueChange={(val) => setVehicleId(val || "")}>
                 <SelectTrigger className="w-full h-10 flex justify-between items-center bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-sm focus-visible:border-zinc-905 rounded-md">
                   <SelectValue placeholder={loadingVehicles ? "Loading Fleet..." : "Select Vehicle"} />
                 </SelectTrigger>

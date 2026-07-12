@@ -18,15 +18,15 @@ import { Vehicle } from "@/types/vehicle";
 import { toast } from "sonner";
 
 const fuelFormSchema = z.object({
-  vehicleId: z.number({ required_error: "Vehicle is required" }).int().positive(),
+  vehicleId: z.number({ message: "Vehicle is required" }).int().positive(),
   tripId: z.number().int().positive().optional(),
   logDate: z.string().trim().min(1, "Date is required").refine((val) => {
     const date = new Date(val);
     return !Number.isNaN(date.getTime());
   }, "Please enter a valid date"),
-  odometerKm: z.number({ required_error: "Odometer is required" }).nonnegative("Odometer must be non-negative"),
-  liters: z.number({ required_error: "Liters is required" }).nonnegative("Liters must be non-negative"),
-  fuelCost: z.number({ required_error: "Fuel cost is required" }).nonnegative("Fuel cost must be non-negative"),
+  odometerKm: z.number({ message: "Odometer is required" }).nonnegative("Odometer must be non-negative"),
+  liters: z.number({ message: "Liters is required" }).nonnegative("Liters must be non-negative"),
+  fuelCost: z.number({ message: "Fuel cost is required" }).nonnegative("Fuel cost must be non-negative"),
   remarks: z.string().optional(),
 });
 
@@ -65,7 +65,7 @@ export default function FuelLogForm({
       getVehicles()
         .then((res) => {
           if (res.success && Array.isArray(res.vehicles)) {
-            setVehicles(res.vehicles.filter((v) => v.status !== "RETIRED"));
+            setVehicles(res.vehicles.filter((v: any) => v.status !== "RETIRED"));
           }
         })
         .catch(() => {
@@ -168,7 +168,7 @@ export default function FuelLogForm({
             <label className="text-[10px] font-semibold text-zinc-550 dark:text-zinc-400 uppercase tracking-wider block">
               Vehicle
             </label>
-            <Select value={vehicleId} onValueChange={setVehicleId}>
+            <Select value={vehicleId} onValueChange={(val) => setVehicleId(val || "")}>
               <SelectTrigger className="w-full h-10 flex justify-between items-center bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-sm focus-visible:border-zinc-900 rounded-md">
                 <SelectValue placeholder={loadingVehicles ? "Loading Fleet..." : "Select Vehicle"} />
               </SelectTrigger>

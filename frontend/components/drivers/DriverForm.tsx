@@ -22,7 +22,7 @@ const driverFormSchema = z.object({
   name: z.string().trim().min(1, "Driver name is required"),
   licenseNo: z.string().trim().min(1, "License number is required"),
   category: z.enum(["LMV", "HMV"], {
-    errorMap: () => ({ message: "Category must be LMV or HMV" }),
+    message: "Category must be LMV or HMV",
   }),
   licenseExpiry: z.string().trim().min(1, "License expiry date is required").refine((val) => {
     const date = new Date(val);
