@@ -38,12 +38,6 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
 ];
 
 const ROLE_MENU_ITEMS: Record<string, string[]> = {
-<<<<<<< Updated upstream
-  FLEET_MANAGER: ["Vehicles", "Maintenance"],
-  DISPATCHER: ["Dashboard", "Trips"],
-  SAFETY_OFFICER: ["Drivers"],
-  FINANCIAL_ANALYST: ["Fuel & Expenses", "Analytics"]
-=======
   // Fleet Manager: fleet assets + maintenance
   FLEET_MANAGER: ["Dashboard", "Vehicles", "Maintenance", "Settings"],
   // Dispatcher: dispatch queue only
@@ -52,7 +46,6 @@ const ROLE_MENU_ITEMS: Record<string, string[]> = {
   SAFETY_OFFICER: ["Dashboard", "Drivers", "Maintenance"],
   // Financial Analyst: costs + reporting
   FINANCIAL_ANALYST: ["Fuel & Expenses", "Analytics"],
->>>>>>> Stashed changes
 };
 
 export function normalizeRole(role: string | null | undefined) {
