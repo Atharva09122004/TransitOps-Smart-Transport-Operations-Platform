@@ -1,11 +1,7 @@
 "use client";
 
 import * as React from "react";
-<<<<<<< Updated upstream
-import { Plus, Loader2, RefreshCw, Download } from "lucide-react";
-=======
-import { Plus, Loader2, RefreshCw, Search, ArrowUpDown, Filter, X } from "lucide-react";
->>>>>>> Stashed changes
+import { Plus, Loader2, RefreshCw, Download, Search, ArrowUpDown, Filter, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import TripTable from "@/components/trips/TripTable";
 import TripForm from "@/components/trips/TripForm";

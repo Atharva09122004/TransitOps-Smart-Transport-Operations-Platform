@@ -1,11 +1,7 @@
 "use client";
 
 import * as React from "react";
-<<<<<<< Updated upstream
-import { Plus, Loader2, RefreshCw, Fuel, DollarSign, Download } from "lucide-react";
-=======
-import { Plus, Loader2, RefreshCw, Fuel, DollarSign, Search, ArrowUpDown } from "lucide-react";
->>>>>>> Stashed changes
+import { Plus, Loader2, RefreshCw, Fuel, DollarSign, Download, Search, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import FuelLogTable from "@/components/fuel/FuelLogTable";
 import ExpenseTable from "@/components/fuel/ExpenseTable";
