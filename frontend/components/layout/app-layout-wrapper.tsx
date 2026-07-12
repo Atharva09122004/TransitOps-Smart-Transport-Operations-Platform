@@ -18,17 +18,10 @@ export default function AppLayoutWrapper({
 
   if (isLoginPage) {
     return (
-<<<<<<< HEAD
-      <SettingsProvider>
-        {children}
-        <Toaster position="top-right" closeButton />
-      </SettingsProvider>
-=======
       <ThemeProvider attribute="class" defaultTheme="light">
         {children}
         <Toaster position="top-right" closeButton />
       </ThemeProvider>
->>>>>>> e21c9cd41bb78a6b7cb495efd05d19b93ba7c434
     );
   }
 
