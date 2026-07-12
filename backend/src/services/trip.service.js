@@ -117,6 +117,8 @@ async function getAllTrips() {
   return trips.map((trip) => ({
     id: trip.id,
     tripCode: trip.tripCode,
+    source: trip.source,
+    destination: trip.destination,
     vehicle: trip.vehicle ? { regNo: trip.vehicle.regNo } : null,
     driver: trip.driver ? { name: trip.driver.name } : null,
     status: trip.status,
