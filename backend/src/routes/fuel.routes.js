@@ -1,9 +1,9 @@
 const express = require("express");
+const fuelController = require("../controllers/fuel.controller");
 
 const router = express.Router();
 
-router.get("/health", (req, res) => {
-  res.json({ message: "Fuel routes ready." });
-});
+router.post("/", fuelController.create);
+router.get("/", fuelController.getAll);
 
 module.exports = router;
