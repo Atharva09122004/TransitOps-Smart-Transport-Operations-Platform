@@ -131,7 +131,7 @@ async function getFleetManagerDashboard() {
   const totalFuelExpenses = toNumber(fuelExpenses._sum.fuelCost);
   const totalExpenses = toNumber(expensesSum._sum.tollCost) + toNumber(expensesSum._sum.otherCost);
   const maintenanceCost = toNumber(maintenanceCostResult._sum.cost);
-  const operationalCost = totalFuelExpenses + totalExpenses + maintenanceCost;
+  const operationalCost = totalFuelExpenses + maintenanceCost;
   const revenue = toNumber(revenueSum._sum.revenue);
   const totalAcquisitionCost = toNumber(vehicleAcquisitionCostSum._sum.acquisitionCost);
   const profit = revenue - (totalFuelExpenses + maintenanceCost);
@@ -293,7 +293,7 @@ async function getFinancialDashboard() {
     tollCost: toNumber(expensesSum._sum.tollCost),
     otherCost: toNumber(expensesSum._sum.otherCost),
   };
-  const operationalCost = fuelCost + maintenanceCost + expenseBreakdown.tollCost + expenseBreakdown.otherCost;
+  const operationalCost = fuelCost + maintenanceCost;
   const totalAcquisitionCost = toNumber(vehicleAcquisitionCostSum._sum.acquisitionCost);
   const profit = revenue - (fuelCost + maintenanceCost);
   const roi = totalAcquisitionCost > 0 ? Math.round((profit / totalAcquisitionCost) * 100) : 0;
