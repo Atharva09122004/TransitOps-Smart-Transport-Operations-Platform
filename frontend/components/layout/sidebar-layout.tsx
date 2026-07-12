@@ -38,19 +38,10 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
 ];
 
 const ROLE_MENU_ITEMS: Record<string, string[]> = {
-  FLEET_MANAGER: [
-    "Dashboard",
-    "Vehicles",
-    "Drivers",
-    "Trips",
-    "Maintenance",
-    "Fuel & Expenses",
-    "Analytics",
-    "Settings"
-  ],
-  DRIVER: ["Dashboard", "Trips", "Fuel & Expenses"],
-  SAFETY_OFFICER: ["Dashboard", "Vehicles", "Drivers", "Trips", "Maintenance", "Analytics"],
-  FINANCIAL_ANALYST: ["Dashboard", "Trips", "Fuel & Expenses", "Analytics"]
+  FLEET_MANAGER: ["Vehicles", "Maintenance"],
+  DISPATCHER: ["Dashboard", "Trips"],
+  SAFETY_OFFICER: ["Drivers"],
+  FINANCIAL_ANALYST: ["Fuel & Expenses", "Analytics"]
 };
 
 function normalizeRole(role: string | null | undefined) {
@@ -61,7 +52,7 @@ function normalizeRole(role: string | null | undefined) {
   }
 
   if (["DRIVER", "DISPATCHER"].includes(normalizedRole)) {
-    return "DRIVER";
+    return "DISPATCHER";
   }
 
   if (["SAFETY_OFFICER", "SAFETY"].includes(normalizedRole)) {
@@ -218,8 +209,8 @@ export default function SidebarLayout({
     switch (normalizeRole(role)) {
       case "FLEET_MANAGER":
         return "Fleet Manager";
-      case "DRIVER":
-        return "Driver";
+      case "DISPATCHER":
+        return "Dispatcher";
       case "SAFETY_OFFICER":
         return "Safety Officer";
       case "FINANCIAL_ANALYST":

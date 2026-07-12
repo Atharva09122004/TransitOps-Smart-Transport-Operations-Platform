@@ -23,7 +23,7 @@ export default function LoginPage() {
   // Form states
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
-  const [role, setRole] = React.useState<string | null>("DRIVER"); // Default role helper
+  const [role, setRole] = React.useState<string | null>("DISPATCHER"); // Default role helper
   const [showPassword, setShowPassword] = React.useState(false);
 
   // Status states
@@ -59,7 +59,10 @@ export default function LoginPage() {
 
       if (res.success) {
         if (typeof window !== "undefined") {
-          const resolvedRole = (res.user?.role || role || "DRIVER").toUpperCase();
+          let resolvedRole = (res.user?.role || role || "DISPATCHER").toUpperCase();
+          if (resolvedRole === "DRIVER") {
+            resolvedRole = "DISPATCHER";
+          }
 
           localStorage.setItem("token", res.token);
           localStorage.setItem("user", JSON.stringify(res.user));
@@ -251,7 +254,7 @@ export default function LoginPage() {
                     <SelectItem value="FLEET_MANAGER">
                       <span className="text-xs text-zinc-700 dark:text-zinc-300">Fleet Manager</span>
                     </SelectItem>
-                    <SelectItem value="DRIVER">
+                    <SelectItem value="DISPATCHER">
                       <span className="text-xs text-zinc-700 dark:text-zinc-300">Dispatcher</span>
                     </SelectItem>
                     <SelectItem value="SAFETY_OFFICER">
