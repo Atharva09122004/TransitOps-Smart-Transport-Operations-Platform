@@ -1,9 +1,17 @@
 const express = require("express");
+const authenticate = require("../middleware/auth.middleware");
+const {
+  createDriver,
+  getDrivers,
+  updateDriver,
+  deleteDriver,
+} = require("../controllers/driver.controller");
 
 const router = express.Router();
 
-router.get("/health", (req, res) => {
-  res.json({ message: "Driver routes ready." });
-});
+router.post("/", authenticate, createDriver);
+router.get("/", authenticate, getDrivers);
+router.put("/:id", authenticate, updateDriver);
+router.delete("/:id", authenticate, deleteDriver);
 
 module.exports = router;
