@@ -119,10 +119,17 @@ async function completeMaintenance(id) {
     });
 
     if (activeRecords === 0) {
-      await tx.vehicle.update({
+      const vehicle = await tx.vehicle.findUnique({
         where: { id: record.vehicleId },
-        data: { status: "AVAILABLE" },
+        select: { status: true },
       });
+
+      if (vehicle && vehicle.status === "IN_SHOP") {
+        await tx.vehicle.update({
+          where: { id: record.vehicleId },
+          data: { status: "AVAILABLE" },
+        });
+      }
     }
 
     return {

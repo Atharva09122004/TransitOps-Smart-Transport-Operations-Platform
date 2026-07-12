@@ -37,21 +37,15 @@ async function getAnalyticsReport() {
 
   const fleetUtilization = totalVehicles > 0 ? Math.round((activeVehicles / totalVehicles) * 100) : 0;
 
-  // 3. Operational Cost
+  // 3. Operational Cost (fuel + maintenance only; tolls/other are excluded)
   const maintenance = await prisma.maintenanceRecord.aggregate({
     _sum: { cost: true },
-  });
-  
-  const expenses = await prisma.expense.aggregate({
-    _sum: { tollCost: true, otherCost: true },
   });
 
   const maintenanceCost = maintenance._sum.cost ? Number(maintenance._sum.cost) : 0;
   const totalFuelCost = fuelLogs._sum.fuelCost ? Number(fuelLogs._sum.fuelCost) : 0;
-  const tollCost = expenses._sum.tollCost ? Number(expenses._sum.tollCost) : 0;
-  const otherCost = expenses._sum.otherCost ? Number(expenses._sum.otherCost) : 0;
 
-  const operationalCost = maintenanceCost + totalFuelCost + tollCost + otherCost;
+  const operationalCost = maintenanceCost + totalFuelCost;
 
   // 4. Vehicle ROI
   const revenues = await prisma.tripRevenue.aggregate({
@@ -129,8 +123,8 @@ async function getAnalyticsReport() {
     summary: {
       fuelEfficiency: `${fuelEfficiency} km/l`,
       fleetUtilization: `${fleetUtilization}%`,
-      operationalCost: operationalCost,
-      vehicleROI: `${vehicleROI}%`
+      operationalCost,
+      vehicleROI: `${vehicleROI}%`,
     },
     monthlyRevenue,
     topCostliestVehicles

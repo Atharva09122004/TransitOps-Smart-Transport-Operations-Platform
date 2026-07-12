@@ -13,7 +13,7 @@ async function main() {
       email: "driver@transitops.com",
       password: "password123",
       displayName: "Driver User",
-      role: "DRIVER",
+      role: "DISPATCHER",
     },
     {
       email: "safety@transitops.com",

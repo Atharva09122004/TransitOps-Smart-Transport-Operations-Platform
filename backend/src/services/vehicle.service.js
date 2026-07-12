@@ -18,7 +18,7 @@ function formatVehicle(vehicle) {
   const expensesCost = vehicle.expenses
     ? vehicle.expenses.reduce((sum, e) => sum + Number(e.tollCost) + Number(e.otherCost), 0)
     : 0;
-  const operationalCost = maintenanceCost + fuelCost + expensesCost;
+  const operationalCost = maintenanceCost + fuelCost;
 
   return {
     ...vehicle,
@@ -27,7 +27,8 @@ function formatVehicle(vehicle) {
     acquisitionCost: vehicle.acquisitionCost ? Number(vehicle.acquisitionCost) : 0,
     fuelCost,
     maintenanceCost,
-    operationalCost
+    expensesCost,
+    operationalCost,
   };
 }
 

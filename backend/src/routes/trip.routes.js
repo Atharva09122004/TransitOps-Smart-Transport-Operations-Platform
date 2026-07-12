@@ -5,12 +5,12 @@ const requireRole = require("../middleware/role.middleware");
 
 const router = express.Router();
 
-router.get("/", authenticate, requireRole("FLEET_MANAGER", "DRIVER", "SAFETY_OFFICER", "FINANCIAL_ANALYST"), tripController.getAllTrips);
-router.get("/:id", authenticate, requireRole("FLEET_MANAGER", "DRIVER", "SAFETY_OFFICER", "FINANCIAL_ANALYST"), tripController.getTripById);
-router.post("/", authenticate, requireRole("FLEET_MANAGER"), tripController.createTrip);
-router.put("/:id", authenticate, requireRole("FLEET_MANAGER"), tripController.updateTrip);
-router.patch("/:id/dispatch", authenticate, requireRole("FLEET_MANAGER"), tripController.dispatchTrip);
-router.patch("/:id/complete", authenticate, requireRole("FLEET_MANAGER"), tripController.completeTrip);
-router.patch("/:id/cancel", authenticate, requireRole("FLEET_MANAGER"), tripController.cancelTrip);
+router.get("/", authenticate, requireRole("DISPATCHER"), tripController.getAllTrips);
+router.get("/:id", authenticate, requireRole("DISPATCHER"), tripController.getTripById);
+router.post("/", authenticate, requireRole("DISPATCHER"), tripController.createTrip);
+router.put("/:id", authenticate, requireRole("DISPATCHER"), tripController.updateTrip);
+router.patch("/:id/dispatch", authenticate, requireRole("DISPATCHER"), tripController.dispatchTrip);
+router.patch("/:id/complete", authenticate, requireRole("DISPATCHER"), tripController.completeTrip);
+router.patch("/:id/cancel", authenticate, requireRole("DISPATCHER"), tripController.cancelTrip);
 
 module.exports = router;

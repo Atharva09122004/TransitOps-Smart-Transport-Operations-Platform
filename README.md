@@ -79,7 +79,7 @@ Example request:
 Seeded users:
 
 - `manager@transitops.com` / `password123` / `FLEET_MANAGER`
-- `driver@transitops.com` / `password123` / `DRIVER`
+- `driver@transitops.com` / `password123` / `DISPATCHER`
 - `safety@transitops.com` / `password123` / `SAFETY_OFFICER`
 - `finance@transitops.com` / `password123` / `FINANCIAL_ANALYST`
 

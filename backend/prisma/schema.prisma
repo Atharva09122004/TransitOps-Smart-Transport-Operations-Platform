@@ -9,7 +9,7 @@ datasource db {
 
 enum UserRole {
   FLEET_MANAGER
-  DRIVER
+  DISPATCHER
   SAFETY_OFFICER
   FINANCIAL_ANALYST
 }

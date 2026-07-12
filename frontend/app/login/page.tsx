@@ -59,10 +59,14 @@ export default function LoginPage() {
 
       if (res.success) {
         if (typeof window !== "undefined") {
+<<<<<<< Updated upstream
           let resolvedRole = (res.user?.role || role || "DISPATCHER").toUpperCase();
           if (resolvedRole === "DRIVER") {
             resolvedRole = "DISPATCHER";
           }
+=======
+          const resolvedRole = (res.user?.role || role || "DISPATCHER").toUpperCase();
+>>>>>>> Stashed changes
 
           localStorage.setItem("token", res.token);
           localStorage.setItem("user", JSON.stringify(res.user));

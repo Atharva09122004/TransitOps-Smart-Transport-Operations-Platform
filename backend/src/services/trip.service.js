@@ -70,6 +70,7 @@ function normalizeTrip(trip) {
 }
 
 async function createTrip(payload) {
+  // Trip creation RBAC remains FLEET_MANAGER-only (see trip.routes.js); broader roles are a separate product decision.
   const { tripCode, source, destination, vehicleId, driverId, cargoWeightKg, plannedDistanceKm, etaMinutes } = payload;
 
   const existingTrip = await prisma.trip.findUnique({ where: { tripCode } });
@@ -85,6 +86,25 @@ async function createTrip(payload) {
   const driver = await prisma.driver.findUnique({ where: { id: driverId } });
   if (!driver) {
     throw createHttpError(404, "Driver not found");
+  }
+
+  if (vehicle.status !== "AVAILABLE") {
+    throw createHttpError(400, "Vehicle is not available");
+  }
+
+  if (driver.status !== "AVAILABLE") {
+    throw createHttpError(400, "Driver is not available");
+  }
+
+  if (driver.licenseExpiry < new Date()) {
+    throw createHttpError(400, "Driver license has expired");
+  }
+
+  const cargoWeight = toNumber(cargoWeightKg);
+  const vehicleCapacity = toNumber(vehicle.capacityKg);
+
+  if (cargoWeight > vehicleCapacity) {
+    throw createHttpError(400, "Cargo weight exceeds vehicle capacity");
   }
 
   const trip = await prisma.trip.create({
@@ -322,6 +342,8 @@ async function cancelTrip(id, cancelledReason) {
     throw createHttpError(400, "Completed trips cannot be cancelled");
   }
 
+  const wasDispatched = trip.status === "DISPATCHED";
+
   const updatedTrip = await prisma.$transaction(async (tx) => {
     const tripResult = await tx.trip.update({
       where: { id },
@@ -338,14 +360,14 @@ async function cancelTrip(id, cancelledReason) {
       },
     });
 
-    if (trip.vehicleId) {
+    if (wasDispatched && trip.vehicleId) {
       await tx.vehicle.update({
         where: { id: trip.vehicleId },
         data: { status: "AVAILABLE" },
       });
     }
 
-    if (trip.driverId) {
+    if (wasDispatched && trip.driverId) {
       await tx.driver.update({
         where: { id: trip.driverId },
         data: { status: "AVAILABLE" },

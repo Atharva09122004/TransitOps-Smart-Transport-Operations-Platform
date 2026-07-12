@@ -7,6 +7,10 @@ export interface Vehicle {
   odometerKm: number;
   acquisitionCost: number;
   status: "AVAILABLE" | "ON_TRIP" | "IN_SHOP" | "RETIRED";
+  fuelCost?: number;
+  maintenanceCost?: number;
+  expensesCost?: number;
+  operationalCost?: number;
   createdAt: string;
   updatedAt: string;
 }

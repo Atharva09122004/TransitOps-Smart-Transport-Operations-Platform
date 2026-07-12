@@ -87,7 +87,7 @@ function buildMonthlyCostSummary({ fuelLogs, maintenanceRecords, expenses }) {
   return Array.from(buckets.values()).sort((a, b) => a.month.localeCompare(b.month));
 }
 
-async function getFleetManagerDashboard() {
+async function getSharedFleetMetrics() {
   const [
     totalVehicles,
     availableVehicles,
@@ -101,10 +101,8 @@ async function getFleetManagerDashboard() {
     dispatchedTrips,
     completedTrips,
     cancelledTrips,
-    maintenanceCount,
     maintenanceCostResult,
-    fuelExpenses,
-    expensesSum,
+    fuelCostResult,
     revenueSum,
     vehicleAcquisitionCostSum,
   ] = await Promise.all([
@@ -120,21 +118,18 @@ async function getFleetManagerDashboard() {
     prisma.trip.count({ where: { status: "DISPATCHED" } }),
     prisma.trip.count({ where: { status: "COMPLETED" } }),
     prisma.trip.count({ where: { status: "CANCELLED" } }),
-    prisma.maintenanceRecord.count(),
     prisma.maintenanceRecord.aggregate({ _sum: { cost: true } }),
     prisma.fuelLog.aggregate({ _sum: { fuelCost: true } }),
-    prisma.expense.aggregate({ _sum: { tollCost: true, otherCost: true } }),
     prisma.tripRevenue.aggregate({ _sum: { revenue: true } }),
     prisma.vehicle.aggregate({ _sum: { acquisitionCost: true } }),
   ]);
 
-  const totalFuelExpenses = toNumber(fuelExpenses._sum.fuelCost);
-  const totalExpenses = toNumber(expensesSum._sum.tollCost) + toNumber(expensesSum._sum.otherCost);
+  const fuelCost = toNumber(fuelCostResult._sum.fuelCost);
   const maintenanceCost = toNumber(maintenanceCostResult._sum.cost);
-  const operationalCost = totalFuelExpenses + maintenanceCost;
+  const operationalCost = fuelCost + maintenanceCost;
   const revenue = toNumber(revenueSum._sum.revenue);
   const totalAcquisitionCost = toNumber(vehicleAcquisitionCostSum._sum.acquisitionCost);
-  const profit = revenue - (totalFuelExpenses + maintenanceCost);
+  const profit = revenue - operationalCost;
   const fleetUtilization = roundPercentage(vehiclesOnTrip, totalVehicles);
   const roi = totalAcquisitionCost > 0 ? Math.round((profit / totalAcquisitionCost) * 100) : 0;
 
@@ -151,9 +146,8 @@ async function getFleetManagerDashboard() {
     dispatchedTrips,
     completedTrips,
     cancelledTrips,
-    maintenanceCount,
+    fuelCost,
     maintenanceCost,
-    fuelExpenses: totalFuelExpenses,
     operationalCost,
     revenue,
     fleetUtilization,
@@ -161,93 +155,80 @@ async function getFleetManagerDashboard() {
   };
 }
 
-async function getDriverDashboard(userId) {
-  const driver = await prisma.driver.findFirst({
-    where: { userId },
-    select: { id: true, safetyScore: true },
-  });
+async function getFleetManagerDashboard() {
+  const [shared, maintenanceCount, expensesSum] = await Promise.all([
+    getSharedFleetMetrics(),
+    prisma.maintenanceRecord.count(),
+    prisma.expense.aggregate({ _sum: { tollCost: true, otherCost: true } }),
+  ]);
 
-  if (!driver) {
-    throw createHttpError(404, "Driver profile not found");
-  }
+  const totalExpenses = toNumber(expensesSum._sum.tollCost) + toNumber(expensesSum._sum.otherCost);
 
-  const todayStart = getStartOfDay();
+  return {
+    ...shared,
+    maintenanceCount,
+    totalExpenses,
+    // Backward-compatible alias used by older clients
+    fuelExpenses: shared.fuelCost,
+  };
+}
 
-  const [assignedTrips, completedTrips, currentTrip, todayDistance, fuelLogsSubmitted, expensesSubmitted] = await Promise.all([
-    prisma.trip.count({ where: { driverId: driver.id } }),
-    prisma.trip.count({ where: { driverId: driver.id, status: "COMPLETED" } }),
-    prisma.trip.findFirst({
-      where: { driverId: driver.id },
-      orderBy: { updatedAt: "desc" },
-      select: { status: true },
+async function getDispatcherDashboard() {
+  const [shared, completedToday, recentTrips] = await Promise.all([
+    getSharedFleetMetrics(),
+    prisma.trip.count({
+      where: { status: "COMPLETED", completedAt: { gte: getStartOfDay() } },
     }),
-    prisma.trip.aggregate({
-      where: {
-        driverId: driver.id,
-        completedAt: { gte: todayStart },
-      },
-      _sum: { actualDistanceKm: true },
-    }),
-    prisma.fuelLog.count({
-      where: {
-        trip: { driverId: driver.id },
-      },
-    }),
-    prisma.expense.count({
-      where: {
-        trip: { driverId: driver.id },
+    prisma.trip.findMany({
+      take: 10,
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        tripCode: true,
+        source: true,
+        destination: true,
+        status: true,
+        vehicle: { select: { regNo: true } },
+        driver: { select: { name: true } },
       },
     }),
   ]);
 
   return {
-    assignedTrips,
-    completedTrips,
-    currentTripStatus: currentTrip ? currentTrip.status : null,
-    todayDistance: toNumber(todayDistance._sum.actualDistanceKm),
-    safetyScore: driver.safetyScore,
-    fuelLogsSubmitted,
-    expensesSubmitted,
+    ...shared,
+    completedToday,
+    recentTrips,
   };
 }
 
 async function getSafetyOfficerDashboard() {
   const [
+    shared,
     maintenanceRecords,
-    vehiclesInShop,
     upcomingMaintenance,
-    driversOnTrip,
     averageSafetyScore,
-    availableVehicles,
-    onTripVehicles,
-    inShopVehicles,
   ] = await Promise.all([
+    getSharedFleetMetrics(),
     prisma.maintenanceRecord.count(),
-    prisma.vehicle.count({ where: { status: "IN_SHOP" } }),
     prisma.maintenanceRecord.count({
       where: {
         status: "IN_SHOP",
         serviceDate: { gte: getStartOfDay() },
       },
     }),
-    prisma.driver.count({ where: { isActive: true, status: "ON_TRIP" } }),
     prisma.driver.aggregate({ _avg: { safetyScore: true } }),
-    prisma.vehicle.count({ where: { status: "AVAILABLE" } }),
-    prisma.vehicle.count({ where: { status: "ON_TRIP" } }),
-    prisma.vehicle.count({ where: { status: "IN_SHOP" } }),
   ]);
 
   return {
+    ...shared,
     maintenanceRecords,
-    vehiclesInShop,
     upcomingMaintenance,
     safetyIncidents: 0,
-    driversOnTrip,
     driverSafetyScores: Math.round(toNumber(averageSafetyScore._avg.safetyScore)),
     vehicleHealthSummary: {
-      availableVehicles,
-      onTripVehicles,
-      inShopVehicles,
+      availableVehicles: shared.availableVehicles,
+      onTripVehicles: shared.vehiclesOnTrip,
+      inShopVehicles: shared.vehiclesInShop,
     },
   };
 }
@@ -256,22 +237,14 @@ async function getFinancialDashboard() {
   const startOfYear = getStartOfYear();
 
   const [
-    revenueSum,
-    fuelCostSum,
-    maintenanceCostSum,
+    shared,
     expensesSum,
-    vehicleAcquisitionCostSum,
-    tripsCompleted,
     fuelLogs,
     maintenanceRecords,
     expenses,
   ] = await Promise.all([
-    prisma.tripRevenue.aggregate({ _sum: { revenue: true } }),
-    prisma.fuelLog.aggregate({ _sum: { fuelCost: true } }),
-    prisma.maintenanceRecord.aggregate({ _sum: { cost: true } }),
+    getSharedFleetMetrics(),
     prisma.expense.aggregate({ _sum: { tollCost: true, otherCost: true } }),
-    prisma.vehicle.aggregate({ _sum: { acquisitionCost: true } }),
-    prisma.trip.count({ where: { status: "COMPLETED" } }),
     prisma.fuelLog.findMany({
       where: { createdAt: { gte: startOfYear } },
       select: { createdAt: true, fuelCost: true },
@@ -286,26 +259,15 @@ async function getFinancialDashboard() {
     }),
   ]);
 
-  const revenue = toNumber(revenueSum._sum.revenue);
-  const fuelCost = toNumber(fuelCostSum._sum.fuelCost);
-  const maintenanceCost = toNumber(maintenanceCostSum._sum.cost);
   const expenseBreakdown = {
     tollCost: toNumber(expensesSum._sum.tollCost),
     otherCost: toNumber(expensesSum._sum.otherCost),
   };
-  const operationalCost = fuelCost + maintenanceCost;
-  const totalAcquisitionCost = toNumber(vehicleAcquisitionCostSum._sum.acquisitionCost);
-  const profit = revenue - (fuelCost + maintenanceCost);
-  const roi = totalAcquisitionCost > 0 ? Math.round((profit / totalAcquisitionCost) * 100) : 0;
 
   return {
-    revenue,
-    fuelCost,
-    maintenanceCost,
-    operationalCost,
-    roi,
+    ...shared,
+    tripsCompleted: shared.completedTrips,
     expenseBreakdown,
-    tripsCompleted,
     monthlyCostSummary: buildMonthlyCostSummary({ fuelLogs, maintenanceRecords, expenses }),
   };
 }
@@ -314,8 +276,8 @@ async function getDashboard(user) {
   switch (user.role) {
     case "FLEET_MANAGER":
       return getFleetManagerDashboard();
-    case "DRIVER":
-      return getDriverDashboard(user.id);
+    case "DISPATCHER":
+      return getDispatcherDashboard();
     case "SAFETY_OFFICER":
       return getSafetyOfficerDashboard();
     case "FINANCIAL_ANALYST":

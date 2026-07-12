@@ -16,7 +16,10 @@ export const createDriver = (data: DriverInput) =>
   api.post("/drivers", data).then((res) => res.data);
 
 export const getDrivers = () =>
-  api.get("/drivers").then((res) => res.data);
+  api.get("/drivers").then((res) => ({
+    ...res.data,
+    drivers: res.data.drivers ?? res.data.data ?? [],
+  }));
 
 export const getDriver = (id: number) =>
   api.get(`/drivers/${id}`).then((res) => res.data);

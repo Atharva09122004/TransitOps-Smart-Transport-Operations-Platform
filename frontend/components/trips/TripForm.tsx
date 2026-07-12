@@ -79,16 +79,24 @@ export default function TripForm({
   React.useEffect(() => {
     if (isOpen) {
       setLoadingAssets(true);
-      Promise.all([getVehicles(), getDrivers()])
+      // Fetch only AVAILABLE vehicles
+      Promise.all([getVehicles({ status: 'AVAILABLE' }), getDrivers()])
         .then(([vehiclesRes, driversRes]) => {
-          if (vehiclesRes.success && Array.isArray(vehiclesRes.vehicles)) {
-            // Keep active and available vehicles for new trip creation
-            setVehicles(vehiclesRes.vehicles.filter((v: Vehicle) => v.status !== "RETIRED"));
-          }
-          if (driversRes.success && Array.isArray(driversRes.drivers)) {
-            // Keep active drivers
-            setDrivers(driversRes.drivers.filter((d: Driver) => d.isActive));
-          }
+          const vehiclesArray = Array.isArray(vehiclesRes.data) ? vehiclesRes.data : [];
+          setVehicles(vehiclesArray.filter((v: Vehicle) => v.status === "AVAILABLE"));
+
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+
+          const driversArray = Array.isArray(driversRes.drivers) ? driversRes.drivers : [];
+          setDrivers(
+            driversArray.filter(
+              (d: Driver) =>
+                d.isActive &&
+                d.status === "AVAILABLE" &&
+                new Date(d.licenseExpiry) >= today
+            )
+          );
         })
         .catch(() => {
           toast.error("Failed to load logistical resource directories.");
@@ -125,6 +133,15 @@ export default function TripForm({
 
   if (!isOpen) return null;
 
+  const selectedVehicle = vehicles.find((v) => v.id.toString() === vehicleId);
+  const selectedDriver = drivers.find((d) => d.id.toString() === driverId);
+  const cargoWeightNum = Number(cargoWeightKg);
+  const isOverCapacity =
+    !!selectedVehicle &&
+    !!cargoWeightKg &&
+    !Number.isNaN(cargoWeightNum) &&
+    cargoWeightNum > Number(selectedVehicle.capacityKg);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSaving) return;
@@ -154,6 +171,17 @@ export default function TripForm({
       });
       setFieldErrors(errors);
       return;
+    }
+
+    // Additional Frontend Validation for Cargo Weight against selected Vehicle Capacity
+    if (!isEditMode) {
+      const selectedVehicleForSubmit = vehicles.find((v) => v.id.toString() === vehicleId);
+      if (selectedVehicleForSubmit && rawData.cargoWeightKg > Number(selectedVehicleForSubmit.capacityKg)) {
+        setFieldErrors({
+          cargoWeightKg: `Cargo weight exceeds vehicle capacity (${selectedVehicleForSubmit.capacityKg} kg)`,
+        });
+        return;
+      }
     }
 
     setIsSaving(true);
@@ -271,16 +299,27 @@ export default function TripForm({
               disabled={isEditMode || loadingAssets}
             >
               <SelectTrigger className="w-full h-10 flex justify-between items-center bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-sm focus-visible:border-zinc-900 rounded-md">
-                <SelectValue placeholder={loadingAssets ? "Loading assets..." : "Select Vehicle"} />
+                <SelectValue placeholder={loadingAssets ? "Loading assets..." : "Select Vehicle"}>
+                  {() =>
+                    selectedVehicle
+                      ? `${selectedVehicle.regNo} - ${selectedVehicle.modelName} (Cap: ${selectedVehicle.capacityKg} kg)`
+                      : (loadingAssets ? "Loading assets..." : "Select Vehicle")
+                  }
+                </SelectValue>
               </SelectTrigger>
               <SelectContent className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-1">
                 {vehicles.map((v) => (
                   <SelectItem key={v.id} value={v.id.toString()}>
-                    {v.regNo} ({v.modelName}) — Status: {v.status}
+                    {v.regNo} - {v.modelName} (Cap: {v.capacityKg} kg)
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            {selectedVehicle && (
+              <span className="text-[10.5px] text-zinc-500 dark:text-zinc-400">
+                Max load capacity: {selectedVehicle.capacityKg} kg
+              </span>
+            )}
             {fieldErrors.vehicleId && (
               <span className="text-[10.5px] text-red-500 font-medium">{fieldErrors.vehicleId}</span>
             )}
@@ -297,7 +336,13 @@ export default function TripForm({
               disabled={isEditMode || loadingAssets}
             >
               <SelectTrigger className="w-full h-10 flex justify-between items-center bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-sm focus-visible:border-zinc-900 rounded-md">
-                <SelectValue placeholder={loadingAssets ? "Loading assets..." : "Select Driver"} />
+                <SelectValue placeholder={loadingAssets ? "Loading assets..." : "Select Driver"}>
+                  {() =>
+                    selectedDriver
+                      ? `${selectedDriver.name} (${selectedDriver.category}) — Status: ${selectedDriver.status}`
+                      : (loadingAssets ? "Loading assets..." : "Select Driver")
+                  }
+                </SelectValue>
               </SelectTrigger>
               <SelectContent className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-1">
                 {drivers.map((d) => (
@@ -325,8 +370,18 @@ export default function TripForm({
                 value={cargoWeightKg}
                 onChange={(e) => setCargoWeightKg(e.target.value)}
                 placeholder="Weight"
-                className="h-10 w-full bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-sm focus-visible:border-zinc-900 rounded-md"
+                aria-invalid={isOverCapacity}
+                className={`h-10 w-full bg-white dark:bg-zinc-900 border text-sm focus-visible:border-zinc-900 rounded-md ${
+                  isOverCapacity
+                    ? "border-red-400 focus-visible:border-red-500"
+                    : "border-zinc-200 dark:border-zinc-800"
+                }`}
               />
+              {isOverCapacity && !fieldErrors.cargoWeightKg && (
+                <span className="text-[10.5px] text-red-500 font-medium">
+                  Exceeds vehicle capacity ({selectedVehicle!.capacityKg} kg)
+                </span>
+              )}
               {fieldErrors.cargoWeightKg && (
                 <span className="text-[10.5px] text-red-500 font-medium">{fieldErrors.cargoWeightKg}</span>
               )}
@@ -384,7 +439,7 @@ export default function TripForm({
             </Button>
             <Button
               type="submit"
-              disabled={isSaving}
+              disabled={isSaving || isOverCapacity}
               className="h-10 text-xs px-4 bg-zinc-900 dark:bg-zinc-50 dark:text-zinc-950 hover:bg-zinc-800 text-white font-medium"
             >
               {isSaving ? (

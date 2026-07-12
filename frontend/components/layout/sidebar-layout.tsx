@@ -38,13 +38,24 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
 ];
 
 const ROLE_MENU_ITEMS: Record<string, string[]> = {
+<<<<<<< Updated upstream
   FLEET_MANAGER: ["Vehicles", "Maintenance"],
   DISPATCHER: ["Dashboard", "Trips"],
   SAFETY_OFFICER: ["Drivers"],
   FINANCIAL_ANALYST: ["Fuel & Expenses", "Analytics"]
+=======
+  // Fleet Manager: fleet assets + maintenance
+  FLEET_MANAGER: ["Dashboard", "Vehicles", "Maintenance", "Settings"],
+  // Dispatcher: dispatch queue only
+  DISPATCHER: ["Dashboard", "Trips"],
+  // Safety Officer: driver roster + compliance (maintenance)
+  SAFETY_OFFICER: ["Dashboard", "Drivers", "Maintenance"],
+  // Financial Analyst: costs + reporting
+  FINANCIAL_ANALYST: ["Fuel & Expenses", "Analytics"],
+>>>>>>> Stashed changes
 };
 
-function normalizeRole(role: string | null | undefined) {
+export function normalizeRole(role: string | null | undefined) {
   const normalizedRole = (role || "").trim().toUpperCase();
 
   if (["FLEET_MANAGER", "MANAGER", "ADMIN", "SUPER_ADMIN"].includes(normalizedRole)) {
@@ -71,7 +82,7 @@ const getStoredUserName = () => {
   return localStorage.getItem("userName") ?? "User";
 };
 
-const getStoredUserRole = () => {
+export const getStoredUserRole = () => {
   if (typeof window === "undefined") return "MEMBER";
 
   let resolvedRole = localStorage.getItem("userRole");
@@ -173,19 +184,26 @@ export default function SidebarLayout({
   const [isMobileOpen, setIsMobileOpen] = React.useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(false);
 
-  // Read session values from localStorage when the component mounts on the client.
-  const [userName] = React.useState(getStoredUserName);
-  const [userRole] = React.useState(getStoredUserRole);
-  const visibleSidebarItems = React.useMemo(() => getVisibleSidebarItems(userRole), [userRole]);
+  // Use stable, hydration-safe defaults for the very first render on both
+  // server and client. localStorage is only ever read client-side, inside
+  // an effect that runs after mount/hydration — never during render — so
+  // the server HTML and the first client render always agree.
+  const [userName, setUserName] = React.useState("User");
+  const [userRole, setUserRole] = React.useState<string | null>(null);
+  const visibleSidebarItems = React.useMemo(
+    () => getVisibleSidebarItems(userRole),
+    [userRole]
+  );
 
   React.useEffect(() => {
-    if (typeof window !== "undefined") {
-      const storedToken = localStorage.getItem("token");
+    setUserName(getStoredUserName());
+    setUserRole(getStoredUserRole());
 
-      if (!storedToken) {
-        toast.error("Session expired. Please sign in again.");
-        router.push("/login");
-      }
+    const storedToken = localStorage.getItem("token");
+
+    if (!storedToken) {
+      toast.error("Session expired. Please sign in again.");
+      router.push("/login");
     }
   }, [router]);
 
@@ -205,7 +223,7 @@ export default function SidebarLayout({
     router.push("/login");
   };
 
-  const getRoleBadge = (role: string) => {
+  const getRoleBadge = (role: string | null) => {
     switch (normalizeRole(role)) {
       case "FLEET_MANAGER":
         return "Fleet Manager";

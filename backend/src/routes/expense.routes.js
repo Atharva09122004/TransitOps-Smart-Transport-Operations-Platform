@@ -6,6 +6,6 @@ const requireRole = require("../middleware/role.middleware");
 const router = express.Router();
 
 router.get("/", authenticate, requireRole("FLEET_MANAGER", "FINANCIAL_ANALYST"), expenseController.getAll);
-router.post("/", authenticate, requireRole("FLEET_MANAGER", "DRIVER"), expenseController.create);
+router.post("/", authenticate, requireRole("FLEET_MANAGER", "DISPATCHER"), expenseController.create);
 
 module.exports = router;
