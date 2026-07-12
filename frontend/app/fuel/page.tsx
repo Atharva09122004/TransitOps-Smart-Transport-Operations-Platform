@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Plus, Loader2, RefreshCw, Fuel, DollarSign } from "lucide-react";
+import { Plus, Loader2, RefreshCw, Fuel, DollarSign, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import FuelLogTable from "@/components/fuel/FuelLogTable";
 import ExpenseTable from "@/components/fuel/ExpenseTable";
@@ -14,6 +14,8 @@ import { Expense } from "@/types/expense";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import axios from "axios";
+import { exportExpensePDF } from "@/utils/pdfExport";
+import { exportToCSV } from "@/utils/csvExport";
 
 export default function FuelExpensesPage() {
   const router = useRouter();
@@ -30,6 +32,25 @@ export default function FuelExpensesPage() {
   const [expenses, setExpenses] = React.useState<Expense[]>([]);
   const [loadingExpenses, setLoadingExpenses] = React.useState(true);
   const [isExpenseFormOpen, setIsExpenseFormOpen] = React.useState(false);
+  const [isPdfGenerating, setIsPdfGenerating] = React.useState(false);
+
+  const handleExportPDF = async () => {
+    const currentData = activeTab === "FUEL" ? fuelLogs : expenses;
+    if (currentData.length === 0) {
+      toast.error("No data available to export.");
+      return;
+    }
+    setIsPdfGenerating(true);
+    try {
+      const filters: Record<string, string> = { "Tab": activeTab === "FUEL" ? "Fuel Logs" : "Trip Expenses" };
+      exportExpensePDF(currentData, activeTab, filters);
+      toast.success(`${activeTab === "FUEL" ? "Fuel" : "Expenses"} report exported to PDF successfully`);
+    } catch (error: any) {
+      toast.error("Failed to export PDF: " + error.message);
+    } finally {
+      setIsPdfGenerating(false);
+    }
+  };
 
   // Load Fuel Logs
   const loadFuelLogs = React.useCallback(async () => {
@@ -118,6 +139,20 @@ export default function FuelExpensesPage() {
               }`}
             />
           </button>
+          {/* Export PDF button */}
+          <Button
+            onClick={handleExportPDF}
+            disabled={isPdfGenerating || (activeTab === "FUEL" ? fuelLogs.length === 0 : expenses.length === 0)}
+            variant="outline"
+            className="h-10 text-xs px-3 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 font-semibold flex items-center gap-1.5 shadow-sm bg-white dark:bg-zinc-900"
+          >
+            {isPdfGenerating ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Download className="size-4" />
+            )}
+            <span>Export PDF</span>
+          </Button>
           {/* Add Actions based on Active Tab */}
           {activeTab === "FUEL" ? (
             <Button

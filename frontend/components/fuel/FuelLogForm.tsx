@@ -67,7 +67,7 @@ export default function FuelLogForm({
       getVehicles()
         .then((res) => {
           if (res.success && Array.isArray(res.vehicles)) {
-            setVehicles(res.vehicles.filter((v: Vehicle) => v.status !== "RETIRED"));
+            setVehicles(res.vehicles.filter((v: any) => v.status !== "RETIRED"));
           }
         })
         .catch(() => {

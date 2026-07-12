@@ -8,11 +8,26 @@ function createHttpError(statusCode, message) {
 
 function formatVehicle(vehicle) {
   if (!vehicle) return null;
+  
+  const maintenanceCost = vehicle.maintenanceRecords
+    ? vehicle.maintenanceRecords.reduce((sum, r) => sum + Number(r.cost), 0)
+    : 0;
+  const fuelCost = vehicle.fuelLogs
+    ? vehicle.fuelLogs.reduce((sum, l) => sum + Number(l.fuelCost), 0)
+    : 0;
+  const expensesCost = vehicle.expenses
+    ? vehicle.expenses.reduce((sum, e) => sum + Number(e.tollCost) + Number(e.otherCost), 0)
+    : 0;
+  const operationalCost = maintenanceCost + fuelCost + expensesCost;
+
   return {
     ...vehicle,
     capacityKg: vehicle.capacityKg ? Number(vehicle.capacityKg) : 0,
     odometerKm: vehicle.odometerKm ? Number(vehicle.odometerKm) : 0,
     acquisitionCost: vehicle.acquisitionCost ? Number(vehicle.acquisitionCost) : 0,
+    fuelCost,
+    maintenanceCost,
+    operationalCost
   };
 }
 
@@ -60,6 +75,18 @@ async function getAllVehicles(filters = {}) {
 
   const vehicles = await prisma.vehicle.findMany({
     where,
+    include: {
+      maintenanceRecords: { select: { cost: true } },
+      fuelLogs: { select: { fuelCost: true, liters: true, logDate: true } },
+      expenses: { select: { tollCost: true, otherCost: true } },
+      trips: {
+        select: {
+          status: true,
+          actualDistanceKm: true,
+          revenue: { select: { revenue: true } }
+        }
+      }
+    },
     orderBy: { createdAt: "desc" },
   });
 
@@ -69,6 +96,18 @@ async function getAllVehicles(filters = {}) {
 async function getVehicleById(id) {
   const vehicle = await prisma.vehicle.findUnique({
     where: { id },
+    include: {
+      maintenanceRecords: { select: { cost: true } },
+      fuelLogs: { select: { fuelCost: true, liters: true, logDate: true } },
+      expenses: { select: { tollCost: true, otherCost: true } },
+      trips: {
+        select: {
+          status: true,
+          actualDistanceKm: true,
+          revenue: { select: { revenue: true } }
+        }
+      }
+    },
   });
 
   if (!vehicle) {

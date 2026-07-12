@@ -1,8 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { Loader2, RefreshCw, BarChart3, TrendingUp, Landmark, ShieldAlert, Sparkles, Fuel, Wrench } from "lucide-react";
+import { Loader2, RefreshCw, BarChart3, TrendingUp, Landmark, ShieldAlert, Sparkles, Fuel, Wrench, Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { getAnalyticsReport } from "@/services/report";
+import { getVehicles } from "@/services/vehicle";
 import { AnalyticsReport } from "@/types/report";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -16,6 +18,24 @@ export default function ReportsPage() {
   // Reports data state
   const [report, setReport] = React.useState<AnalyticsReport | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
+  const [isPdfGenerating, setIsPdfGenerating] = React.useState(false);
+
+  const handleExportPDF = async () => {
+    setIsPdfGenerating(true);
+    try {
+      const res = await getVehicles();
+      if (res.success && Array.isArray(res.data)) {
+        exportAnalyticsPDF(res.data);
+        toast.success("Analytics report exported to PDF successfully");
+      } else {
+        toast.error("Failed to load vehicle details for analytics export.");
+      }
+    } catch (error: any) {
+      toast.error("Failed to export PDF: " + error.message);
+    } finally {
+      setIsPdfGenerating(false);
+    }
+  };
 
   // Load report data
   const loadReport = React.useCallback(async () => {
@@ -60,7 +80,7 @@ export default function ReportsPage() {
             Real-time financial and operational aggregates. View operational costs, revenue reports, and asset utilization metrics.
           </p>
         </div>
-        <div>
+        <div className="flex gap-2">
           <button
             onClick={loadReport}
             disabled={isLoading}
@@ -69,6 +89,19 @@ export default function ReportsPage() {
           >
             <RefreshCw className={`size-4 ${isLoading ? "animate-spin" : ""}`} />
           </button>
+          <Button
+            onClick={handleExportPDF}
+            disabled={isLoading || isPdfGenerating}
+            variant="outline"
+            className="h-10 text-xs px-3 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 font-semibold flex items-center gap-1.5 shadow-sm bg-white dark:bg-zinc-900"
+          >
+            {isPdfGenerating ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Download className="size-4" />
+            )}
+            <span>Export PDF</span>
+          </Button>
         </div>
       </div>
 

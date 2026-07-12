@@ -23,7 +23,7 @@ const vehicleFormSchema = z.object({
   regNo: z.string().trim().min(1, "Registration number is required"),
   modelName: z.string().trim().min(1, "Model name is required"),
   type: z.enum(["VAN", "TRUCK", "MINI"], {
-    errorMap: () => ({ message: "Type must be VAN, TRUCK, or MINI" }),
+    message: "Type must be VAN, TRUCK, or MINI",
   }),
   capacityKg: z.number().gt(0, "Capacity must be greater than 0"),
   odometerKm: z.number().nonnegative("Odometer must be greater than or equal to 0"),

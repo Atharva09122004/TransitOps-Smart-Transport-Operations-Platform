@@ -2,8 +2,11 @@ const dashboardService = require("../services/dashboard.service");
 
 async function getStats(req, res) {
   try {
-    const stats = await dashboardService.getStats();
-    return res.status(200).json(stats);
+    const dashboard = await dashboardService.getDashboard(req.user);
+    return res.status(200).json({
+      success: true,
+      data: dashboard,
+    });
   } catch (error) {
     return res.status(error.statusCode || 500).json({
       success: false,
@@ -14,4 +17,5 @@ async function getStats(req, res) {
 
 module.exports = {
   getStats,
+  getDashboard: getStats,
 };

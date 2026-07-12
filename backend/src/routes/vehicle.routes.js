@@ -1,12 +1,14 @@
 const express = require("express");
 const vehicleController = require("../controllers/vehicle.controller");
+const authenticate = require("../middleware/auth.middleware");
+const requireRole = require("../middleware/role.middleware");
 
 const router = express.Router();
 
-router.post("/", vehicleController.create);
-router.get("/", vehicleController.getAll);
-router.get("/:id", vehicleController.getById);
-router.put("/:id", vehicleController.update);
-router.delete("/:id", vehicleController.delete);
+router.get("/", authenticate, requireRole("FLEET_MANAGER", "SAFETY_OFFICER", "DRIVER"), vehicleController.getAll);
+router.get("/:id", authenticate, requireRole("FLEET_MANAGER", "SAFETY_OFFICER", "DRIVER"), vehicleController.getById);
+router.post("/", authenticate, requireRole("FLEET_MANAGER"), vehicleController.create);
+router.put("/:id", authenticate, requireRole("FLEET_MANAGER"), vehicleController.update);
+router.delete("/:id", authenticate, requireRole("FLEET_MANAGER"), vehicleController.delete);
 
 module.exports = router;

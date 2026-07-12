@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Plus, Loader2, RefreshCw, Search } from "lucide-react";
+import { Plus, Loader2, RefreshCw, Search, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -19,6 +19,7 @@ import { Vehicle } from "@/types/vehicle";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import axios from "axios";
+import { exportVehiclePDF } from "@/utils/pdfExport";
 
 export default function VehiclesPage() {
   const router = useRouter();
@@ -26,6 +27,28 @@ export default function VehiclesPage() {
   // Component states
   const [vehicles, setVehicles] = React.useState<Vehicle[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
+  const [isPdfGenerating, setIsPdfGenerating] = React.useState(false);
+
+  const handleExportPDF = async () => {
+    if (vehicles.length === 0) {
+      toast.error("No data available to export.");
+      return;
+    }
+    setIsPdfGenerating(true);
+    try {
+      const filters: Record<string, string> = {};
+      if (search) filters["Search"] = search;
+      if (typeFilter !== "ALL") filters["Type"] = typeFilter;
+      if (statusFilter !== "ALL") filters["Status"] = statusFilter;
+
+      exportVehiclePDF(vehicles, filters);
+      toast.success("Vehicles report exported to PDF successfully");
+    } catch (error: any) {
+      toast.error("Failed to export PDF: " + error.message);
+    } finally {
+      setIsPdfGenerating(false);
+    }
+  };
 
   // Filters State
   const [search, setSearch] = React.useState("");
@@ -143,6 +166,22 @@ export default function VehiclesPage() {
           >
             <RefreshCw className={`size-4 ${isLoading ? "animate-spin" : ""}`} />
           </button>
+          {/* Export CSV button */}
+
+          {/* Export PDF button */}
+          <Button
+            onClick={handleExportPDF}
+            disabled={isLoading || vehicles.length === 0 || isPdfGenerating}
+            variant="outline"
+            className="h-10 text-xs px-3 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 font-semibold flex items-center gap-1.5 shadow-sm bg-white dark:bg-zinc-900"
+          >
+            {isPdfGenerating ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Download className="size-4" />
+            )}
+            <span>Export PDF</span>
+          </Button>
           {/* Add Vehicle Button */}
           <Button
             onClick={handleAddClick}
@@ -171,7 +210,7 @@ export default function VehiclesPage() {
 
         {/* Type Filter */}
         <div className="w-full md:w-44">
-          <Select value={typeFilter} onValueChange={setTypeFilter}>
+          <Select value={typeFilter} onValueChange={(val) => setTypeFilter(val || "ALL")}>
             <SelectTrigger className="w-full h-10 bg-zinc-50/50 dark:bg-zinc-950/30 border border-zinc-200 dark:border-zinc-800 text-sm rounded-md">
               <SelectValue placeholder="All Types" />
             </SelectTrigger>
@@ -186,7 +225,7 @@ export default function VehiclesPage() {
 
         {/* Status Filter */}
         <div className="w-full md:w-44">
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select value={statusFilter} onValueChange={(val) => setStatusFilter(val || "ALL")}>
             <SelectTrigger className="w-full h-10 bg-zinc-50/50 dark:bg-zinc-950/30 border border-zinc-200 dark:border-zinc-800 text-sm rounded-md">
               <SelectValue placeholder="All Statuses" />
             </SelectTrigger>

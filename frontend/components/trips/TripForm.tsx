@@ -82,20 +82,12 @@ export default function TripForm({
       Promise.all([getVehicles(), getDrivers()])
         .then(([vehiclesRes, driversRes]) => {
           if (vehiclesRes.success && Array.isArray(vehiclesRes.vehicles)) {
-            // Keep only AVAILABLE vehicles for new trip creation (or current assigned vehicle in edit mode)
-            setVehicles(
-              vehiclesRes.vehicles.filter(
-                (v: Vehicle) => v.status === "AVAILABLE" || (isEditMode && v.id === Number(tripToEdit?.vehicleId))
-              )
-            );
+            // Keep active and available vehicles for new trip creation
+            setVehicles(vehiclesRes.vehicles.filter((v) => v.status !== "RETIRED"));
           }
           if (driversRes.success && Array.isArray(driversRes.drivers)) {
-            // Keep active and AVAILABLE drivers (or current assigned driver in edit mode)
-            setDrivers(
-              driversRes.drivers.filter(
-                (d: Driver) => d.isActive && (d.status === "AVAILABLE" || (isEditMode && d.id === Number(tripToEdit?.driverId)))
-              )
-            );
+            // Keep active drivers
+            setDrivers(driversRes.drivers.filter((d) => d.isActive));
           }
         })
         .catch(() => {
@@ -192,7 +184,7 @@ export default function TripForm({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/40 backdrop-blur-xs animate-in fade-in duration-200">
       <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 w-full max-w-md rounded-xl shadow-lg flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
-        
+
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-zinc-100 dark:border-zinc-850">
           <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
@@ -208,7 +200,7 @@ export default function TripForm({
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-5 space-y-4 max-h-[80vh] overflow-y-auto">
-          
+
           {/* Trip Code (Disabled in Edit) */}
           <div className="space-y-1">
             <label className="text-[10px] font-semibold text-zinc-550 dark:text-zinc-400 uppercase tracking-wider block">
@@ -273,8 +265,8 @@ export default function TripForm({
             <label className="text-[10px] font-semibold text-zinc-550 dark:text-zinc-400 uppercase tracking-wider block">
               Vehicle Assignee
             </label>
-            <Select 
-              value={vehicleId} 
+            <Select
+              value={vehicleId}
               onValueChange={(val) => setVehicleId(val || "")}
               disabled={isEditMode || loadingAssets}
             >
@@ -296,11 +288,11 @@ export default function TripForm({
 
           {/* Driver Selector (Disabled in Edit) */}
           <div className="space-y-1">
-            <label className="text-[10px] font-semibold text-zinc-550 dark:text-zinc-400 uppercase tracking-wider block">
+            <label className="text-[10px] font-semibold text-zinc-555 dark:text-zinc-400 uppercase tracking-wider block">
               Driver Assignee
             </label>
-            <Select 
-              value={driverId} 
+            <Select
+              value={driverId}
               onValueChange={(val) => setDriverId(val || "")}
               disabled={isEditMode || loadingAssets}
             >
