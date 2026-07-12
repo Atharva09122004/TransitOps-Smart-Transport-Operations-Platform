@@ -150,7 +150,7 @@ export default function VehiclesPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-            Vehicles Fleet
+            Fleet
           </h1>
           <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
             Register and manage vehicles, capacity details, odometer readings, and operational statuses.

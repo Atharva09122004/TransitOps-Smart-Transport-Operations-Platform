@@ -75,7 +75,7 @@ export default function ReportsPage() {
         <div>
           <h1 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 flex items-center gap-2">
             <BarChart3 className="size-5 text-zinc-900 dark:text-zinc-50" />
-            <span>Operations & Fleet Analytics</span>
+            <span>Analytics</span>
           </h1>
           <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
             Real-time financial and operational aggregates. View operational costs, revenue reports, and asset utilization metrics.

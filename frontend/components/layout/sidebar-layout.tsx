@@ -6,14 +6,11 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   Compass,
   Truck,
-  Shield,
-  TrendingUp,
   Wrench,
   Fuel,
   LogOut,
   User,
   Search,
-  Bell,
   Menu,
   X,
   LayoutDashboard,
@@ -26,7 +23,7 @@ import ThemeToggle from "@/components/ui/theme-toggle";
 interface SidebarItem {
   name: string;
   href: string;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string }>;
 }
 
 const SIDEBAR_ITEMS: SidebarItem[] = [
@@ -35,10 +32,84 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
   { name: "Drivers", href: "/drivers", icon: User },
   { name: "Trips", href: "/trips", icon: Compass },
   { name: "Maintenance", href: "/maintenance", icon: Wrench },
-  { name: "Fuel", href: "/fuel", icon: Fuel },
-  { name: "Reports", href: "/reports", icon: FileText },
+  { name: "Fuel & Expenses", href: "/fuel", icon: Fuel },
+  { name: "Analytics", href: "/analytics", icon: FileText },
   { name: "Settings", href: "/settings", icon: Settings }
 ];
+
+const ROLE_MENU_ITEMS: Record<string, string[]> = {
+  FLEET_MANAGER: [
+    "Dashboard",
+    "Vehicles",
+    "Drivers",
+    "Trips",
+    "Maintenance",
+    "Fuel & Expenses",
+    "Analytics",
+    "Settings"
+  ],
+  DRIVER: ["Dashboard", "Trips", "Fuel & Expenses"],
+  SAFETY_OFFICER: ["Dashboard", "Vehicles", "Drivers", "Trips", "Maintenance", "Analytics"],
+  FINANCIAL_ANALYST: ["Dashboard", "Trips", "Fuel & Expenses", "Analytics"]
+};
+
+function normalizeRole(role: string | null | undefined) {
+  const normalizedRole = (role || "").trim().toUpperCase();
+
+  if (["FLEET_MANAGER", "MANAGER", "ADMIN", "SUPER_ADMIN"].includes(normalizedRole)) {
+    return "FLEET_MANAGER";
+  }
+
+  if (["DRIVER", "DISPATCHER"].includes(normalizedRole)) {
+    return "DRIVER";
+  }
+
+  if (["SAFETY_OFFICER", "SAFETY"].includes(normalizedRole)) {
+    return "SAFETY_OFFICER";
+  }
+
+  if (["FINANCIAL_ANALYST", "FINANCE", "FINANCIAL"].includes(normalizedRole)) {
+    return "FINANCIAL_ANALYST";
+  }
+
+  return "MEMBER";
+}
+
+const getStoredUserName = () => {
+  if (typeof window === "undefined") return "User";
+  return localStorage.getItem("userName") ?? "User";
+};
+
+const getStoredUserRole = () => {
+  if (typeof window === "undefined") return "MEMBER";
+
+  let resolvedRole = localStorage.getItem("userRole");
+  const storedUser = localStorage.getItem("user");
+
+  if (!resolvedRole && storedUser) {
+    try {
+      const parsedUser = JSON.parse(storedUser);
+      if (parsedUser && typeof parsedUser.role === "string") {
+        resolvedRole = parsedUser.role;
+      }
+    } catch {
+      resolvedRole = null;
+    }
+  }
+
+  if (!resolvedRole) {
+    resolvedRole = localStorage.getItem("selectedRole");
+  }
+
+  return normalizeRole(resolvedRole);
+};
+
+function getVisibleSidebarItems(role: string | null | undefined): SidebarItem[] {
+  const normalizedRole = normalizeRole(role);
+  const allowedItems = ROLE_MENU_ITEMS[normalizedRole] ?? SIDEBAR_ITEMS.map((item) => item.name);
+
+  return SIDEBAR_ITEMS.filter((item) => allowedItems.includes(item.name));
+}
 
 function GlobalSearch({ items }: { items: SidebarItem[] }) {
   const router = useRouter();
@@ -109,28 +180,31 @@ export default function SidebarLayout({
   const pathname = usePathname();
   const router = useRouter();
   const [isMobileOpen, setIsMobileOpen] = React.useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(false);
 
-  // Read session values from localStorage
-  const [userName, setUserName] = React.useState("User");
-  const [userRole, setUserRole] = React.useState("MEMBER");
+  // Read session values from localStorage when the component mounts on the client.
+  const [userName] = React.useState(getStoredUserName);
+  const [userRole] = React.useState(getStoredUserRole);
+  const visibleSidebarItems = React.useMemo(() => getVisibleSidebarItems(userRole), [userRole]);
 
   React.useEffect(() => {
     if (typeof window !== "undefined") {
-      const storedName = localStorage.getItem("userName");
-      const storedRole = localStorage.getItem("userRole");
       const storedToken = localStorage.getItem("token");
 
-      // Simple auth guard check
       if (!storedToken) {
         toast.error("Session expired. Please sign in again.");
         router.push("/login");
-        return;
       }
-
-      if (storedName) setUserName(storedName);
-      if (storedRole) setUserRole(storedRole);
     }
   }, [router]);
+
+  const handleSidebarToggle = () => {
+    if (typeof window !== "undefined" && window.innerWidth < 768) {
+      setIsMobileOpen((prev) => !prev);
+    } else {
+      setIsSidebarCollapsed((prev) => !prev);
+    }
+  };
 
   const handleLogout = () => {
     if (typeof window !== "undefined") {
@@ -141,11 +215,11 @@ export default function SidebarLayout({
   };
 
   const getRoleBadge = (role: string) => {
-    switch (role) {
+    switch (normalizeRole(role)) {
       case "FLEET_MANAGER":
         return "Fleet Manager";
       case "DRIVER":
-        return "Dispatcher";
+        return "Driver";
       case "SAFETY_OFFICER":
         return "Safety Officer";
       case "FINANCIAL_ANALYST":
@@ -165,7 +239,7 @@ export default function SidebarLayout({
           <span className="font-semibold text-sm tracking-tight">TransitOps</span>
         </div>
         <button
-          onClick={() => setIsMobileOpen(!isMobileOpen)}
+          onClick={handleSidebarToggle}
           className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white"
         >
           {isMobileOpen ? <X className="size-6" /> : <Menu className="size-6" />}
@@ -174,9 +248,9 @@ export default function SidebarLayout({
 
       {/* SIDEBAR NAVIGATION */}
       <aside
-        className={`fixed inset-y-0 left-0 z-30 w-64 bg-[#0B0C0E] border-r border-zinc-900 flex flex-col justify-between p-6 transform transition-transform duration-300 ease-in-out md:translate-x-0 md:static ${
-          isMobileOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+        className={`fixed inset-y-0 left-0 z-30 bg-[#0B0C0E] border-r border-zinc-900 flex flex-col justify-between p-6 transform transition-all duration-300 ease-in-out md:translate-x-0 md:static md:w-64 ${
+          isMobileOpen ? "translate-x-0 w-64" : "-translate-x-full w-64"
+        } ${isSidebarCollapsed ? "md:w-20" : "md:w-64"}`}
       >
         <div className="space-y-8">
           {/* Logo */}
@@ -189,7 +263,7 @@ export default function SidebarLayout({
 
           {/* Navigation Items */}
           <nav className="space-y-1">
-            {SIDEBAR_ITEMS.map((item) => {
+            {visibleSidebarItems.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
               return (
@@ -204,7 +278,7 @@ export default function SidebarLayout({
                   }`}
                 >
                   <Icon className={`size-4 ${isActive ? "text-white" : "text-zinc-500"}`} />
-                  <span>{item.name}</span>
+                  {!isSidebarCollapsed && <span>{item.name}</span>}
                 </Link>
               );
             })}
@@ -240,17 +314,11 @@ export default function SidebarLayout({
         {/* Header Search & Details */}
         <header className="h-14 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex items-center justify-between px-6 shrink-0 relative z-10">
           {/* Global Search bar */}
-          <GlobalSearch items={SIDEBAR_ITEMS} />
+          <GlobalSearch items={visibleSidebarItems} />
 
           <div className="flex items-center gap-2 ml-auto">
             {/* Theme Toggle */}
             <ThemeToggle />
-
-            {/* Notification placeholder */}
-            <button className="relative p-1.5 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors">
-              <Bell className="size-4" />
-              <span className="absolute top-1 right-1 size-1.5 rounded-full bg-amber-500 animate-pulse" />
-            </button>
 
             {/* Quick profile badge */}
             <div className="flex items-center gap-2 pl-2 border-l border-zinc-200 dark:border-zinc-800">

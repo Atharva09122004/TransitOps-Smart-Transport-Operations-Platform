@@ -59,9 +59,12 @@ export default function LoginPage() {
 
       if (res.success) {
         if (typeof window !== "undefined") {
+          const resolvedRole = (res.user?.role || role || "DRIVER").toUpperCase();
+
           localStorage.setItem("token", res.token);
           localStorage.setItem("user", JSON.stringify(res.user));
-          localStorage.setItem("userRole", res.user.role);
+          localStorage.setItem("userRole", resolvedRole);
+          localStorage.setItem("selectedRole", resolvedRole);
           localStorage.setItem("userName", res.user.displayName || res.user.email);
         }
 
@@ -76,15 +79,18 @@ export default function LoginPage() {
         setErrorMsg(res.message || "Login failed");
         setIsLoading(false);
       }
-    } catch (err: any) {
+    } catch (rawError) {
       setIsLoading(false);
-      console.error("Login component caught error:", err);
+      console.error("Login component caught error:", rawError);
+
+      const err = rawError as unknown;
       if (axios.isAxiosError(err)) {
         const status = err.response?.status;
-        const data = err.response?.data as any;
+        const data = err.response?.data as unknown;
+        const maybeData = typeof data === "object" && data !== null ? data as { message?: string } : undefined;
 
         if (status === 400) {
-          setErrorMsg(data?.message || "Invalid request");
+          setErrorMsg(maybeData?.message || "Invalid request");
         } else if (status === 401) {
           setErrorMsg("Invalid credentials");
         } else if (status === 403) {
@@ -94,7 +100,7 @@ export default function LoginPage() {
         } else if (status === 423) {
           setErrorMsg("Account locked for 15 minutes");
         } else {
-          setErrorMsg(data?.message || "An unexpected error occurred. Please try again.");
+          setErrorMsg(maybeData?.message || "An unexpected error occurred. Please try again.");
         }
       } else {
         setErrorMsg("An unexpected error occurred. Please try again.");
