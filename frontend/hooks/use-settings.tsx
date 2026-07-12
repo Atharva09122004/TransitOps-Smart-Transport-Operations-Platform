@@ -77,7 +77,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   }, [distanceUnitLabel]);
 
   const currencySymbol = React.useMemo(() => {
-    const currencySetting = settings?.currency || "USD ($)";
+    const currencySetting = settings?.currency || "INR (₹)";
     const match = currencySetting.match(/\(([^)]+)\)/);
     if (match && match[1]) {
       return match[1];

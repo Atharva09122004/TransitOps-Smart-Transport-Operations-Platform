@@ -102,9 +102,11 @@ async function getFleetManagerDashboard() {
     completedTrips,
     cancelledTrips,
     maintenanceCount,
+    maintenanceCostResult,
     fuelExpenses,
     expensesSum,
     revenueSum,
+    vehicleAcquisitionCostSum,
   ] = await Promise.all([
     prisma.vehicle.count({ where: { status: { not: "RETIRED" } } }),
     prisma.vehicle.count({ where: { status: "AVAILABLE" } }),
@@ -119,17 +121,22 @@ async function getFleetManagerDashboard() {
     prisma.trip.count({ where: { status: "COMPLETED" } }),
     prisma.trip.count({ where: { status: "CANCELLED" } }),
     prisma.maintenanceRecord.count(),
+    prisma.maintenanceRecord.aggregate({ _sum: { cost: true } }),
     prisma.fuelLog.aggregate({ _sum: { fuelCost: true } }),
     prisma.expense.aggregate({ _sum: { tollCost: true, otherCost: true } }),
     prisma.tripRevenue.aggregate({ _sum: { revenue: true } }),
+    prisma.vehicle.aggregate({ _sum: { acquisitionCost: true } }),
   ]);
 
   const totalFuelExpenses = toNumber(fuelExpenses._sum.fuelCost);
   const totalExpenses = toNumber(expensesSum._sum.tollCost) + toNumber(expensesSum._sum.otherCost);
-  const operationalCost = totalFuelExpenses + totalExpenses;
+  const maintenanceCost = toNumber(maintenanceCostResult._sum.cost);
+  const operationalCost = totalFuelExpenses + totalExpenses + maintenanceCost;
   const revenue = toNumber(revenueSum._sum.revenue);
+  const totalAcquisitionCost = toNumber(vehicleAcquisitionCostSum._sum.acquisitionCost);
+  const profit = revenue - (totalFuelExpenses + maintenanceCost);
   const fleetUtilization = roundPercentage(vehiclesOnTrip, totalVehicles);
-  const roi = operationalCost > 0 ? Math.round(((revenue - operationalCost) / operationalCost) * 100) : 0;
+  const roi = totalAcquisitionCost > 0 ? Math.round((profit / totalAcquisitionCost) * 100) : 0;
 
   return {
     totalVehicles,
@@ -145,6 +152,7 @@ async function getFleetManagerDashboard() {
     completedTrips,
     cancelledTrips,
     maintenanceCount,
+    maintenanceCost,
     fuelExpenses: totalFuelExpenses,
     operationalCost,
     revenue,
@@ -252,6 +260,7 @@ async function getFinancialDashboard() {
     fuelCostSum,
     maintenanceCostSum,
     expensesSum,
+    vehicleAcquisitionCostSum,
     tripsCompleted,
     fuelLogs,
     maintenanceRecords,
@@ -261,6 +270,7 @@ async function getFinancialDashboard() {
     prisma.fuelLog.aggregate({ _sum: { fuelCost: true } }),
     prisma.maintenanceRecord.aggregate({ _sum: { cost: true } }),
     prisma.expense.aggregate({ _sum: { tollCost: true, otherCost: true } }),
+    prisma.vehicle.aggregate({ _sum: { acquisitionCost: true } }),
     prisma.trip.count({ where: { status: "COMPLETED" } }),
     prisma.fuelLog.findMany({
       where: { createdAt: { gte: startOfYear } },
@@ -284,7 +294,9 @@ async function getFinancialDashboard() {
     otherCost: toNumber(expensesSum._sum.otherCost),
   };
   const operationalCost = fuelCost + maintenanceCost + expenseBreakdown.tollCost + expenseBreakdown.otherCost;
-  const roi = operationalCost > 0 ? Math.round(((revenue - operationalCost) / operationalCost) * 100) : 0;
+  const totalAcquisitionCost = toNumber(vehicleAcquisitionCostSum._sum.acquisitionCost);
+  const profit = revenue - (fuelCost + maintenanceCost);
+  const roi = totalAcquisitionCost > 0 ? Math.round((profit / totalAcquisitionCost) * 100) : 0;
 
   return {
     revenue,
