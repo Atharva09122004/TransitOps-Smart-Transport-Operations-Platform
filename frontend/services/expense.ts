@@ -11,7 +11,10 @@ export interface ExpenseInput {
 }
 
 export const getExpenses = (): Promise<{ success: boolean; data: Expense[] }> => {
-  return api.get("/expenses").then((res) => res.data);
+  return api.get("/expenses").then((res) => ({
+    success: res.data.success,
+    data: res.data.expenses,
+  }));
 };
 
 export const createExpense = (data: ExpenseInput): Promise<{ success: boolean; data: Expense }> => {
