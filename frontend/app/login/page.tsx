@@ -78,6 +78,7 @@ export default function LoginPage() {
       }
     } catch (err: any) {
       setIsLoading(false);
+      console.error("Login component caught error:", err);
       if (axios.isAxiosError(err)) {
         const status = err.response?.status;
         const data = err.response?.data as any;
