@@ -1,5 +1,6 @@
 const express = require("express");
 const authenticate = require("../middleware/auth.middleware");
+const requireRole = require("../middleware/role.middleware");
 const {
   createDriver,
   getDrivers,
@@ -9,9 +10,9 @@ const {
 
 const router = express.Router();
 
-router.post("/", authenticate, createDriver);
-router.get("/", authenticate, getDrivers);
-router.put("/:id", authenticate, updateDriver);
-router.delete("/:id", authenticate, deleteDriver);
+router.get("/", authenticate, requireRole("FLEET_MANAGER", "SAFETY_OFFICER"), getDrivers);
+router.post("/", authenticate, requireRole("FLEET_MANAGER"), createDriver);
+router.put("/:id", authenticate, requireRole("FLEET_MANAGER"), updateDriver);
+router.delete("/:id", authenticate, requireRole("FLEET_MANAGER"), deleteDriver);
 
 module.exports = router;
