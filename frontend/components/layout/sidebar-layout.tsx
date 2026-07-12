@@ -21,6 +21,7 @@ import {
   Settings
 } from "lucide-react";
 import { toast } from "sonner";
+import ThemeToggle from "@/components/ui/theme-toggle";
 
 interface SidebarItem {
   name: string;
@@ -38,6 +39,67 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
   { name: "Reports", href: "/reports", icon: FileText },
   { name: "Settings", href: "/settings", icon: Settings }
 ];
+
+function GlobalSearch({ items }: { items: SidebarItem[] }) {
+  const router = useRouter();
+  const [query, setQuery] = React.useState("");
+  const [focused, setFocused] = React.useState(false);
+
+  const filtered = query.trim()
+    ? items.filter((item) =>
+        item.name.toLowerCase().includes(query.toLowerCase())
+      )
+    : [];
+
+  const go = (href: string) => {
+    router.push(href);
+    setQuery("");
+    setFocused(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && filtered.length > 0) {
+      go(filtered[0].href);
+    }
+    if (e.key === "Escape") {
+      setQuery("");
+      setFocused(false);
+    }
+  };
+
+  return (
+    <div className="relative max-w-xs w-full hidden sm:block">
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-zinc-400 pointer-events-none" />
+      <input
+        type="text"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setTimeout(() => setFocused(false), 150)}
+        onKeyDown={handleKeyDown}
+        placeholder="Search pages & resources..."
+        className="h-8.5 w-full pl-9 pr-4 rounded-md border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 text-xs focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-600 transition-colors text-zinc-800 dark:text-zinc-200 placeholder:text-zinc-400"
+      />
+      {focused && filtered.length > 0 && (
+        <div className="absolute top-full mt-1.5 left-0 w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-lg overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 duration-150">
+          {filtered.map((item) => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.href}
+                onMouseDown={() => go(item.href)}
+                className="flex items-center gap-2.5 w-full px-3 py-2.5 text-xs text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-left"
+              >
+                <Icon className="size-3.5 text-zinc-400 shrink-0" />
+                <span className="font-medium">{item.name}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function SidebarLayout({
   children
@@ -177,17 +239,13 @@ export default function SidebarLayout({
         
         {/* Header Search & Details */}
         <header className="h-14 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex items-center justify-between px-6 shrink-0 relative z-10">
-          {/* Search bar helper */}
-          <div className="relative max-w-xs w-full hidden sm:block">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-zinc-400 pointer-events-none" />
-            <input
-              type="text"
-              placeholder="Search resource or logs..."
-              className="h-8.5 w-full pl-9 pr-4 rounded-md border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 text-xs focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-700 transition-colors"
-            />
-          </div>
+          {/* Global Search bar */}
+          <GlobalSearch items={SIDEBAR_ITEMS} />
 
-          <div className="flex items-center gap-4 ml-auto">
+          <div className="flex items-center gap-2 ml-auto">
+            {/* Theme Toggle */}
+            <ThemeToggle />
+
             {/* Notification placeholder */}
             <button className="relative p-1.5 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors">
               <Bell className="size-4" />
@@ -195,7 +253,7 @@ export default function SidebarLayout({
             </button>
 
             {/* Quick profile badge */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 pl-2 border-l border-zinc-200 dark:border-zinc-800">
               <div className="size-6 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center font-bold text-[10px] text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 uppercase">
                 {userName.slice(0, 2)}
               </div>

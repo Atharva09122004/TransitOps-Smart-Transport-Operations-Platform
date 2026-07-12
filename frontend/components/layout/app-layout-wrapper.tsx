@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import SidebarLayout from "./sidebar-layout";
 import { Toaster } from "sonner";
 
+import { ThemeProvider } from "next-themes";
+
 export default function AppLayoutWrapper({
   children
 }: {
@@ -15,17 +17,19 @@ export default function AppLayoutWrapper({
 
   if (isLoginPage) {
     return (
-      <>
+      <ThemeProvider attribute="class" defaultTheme="light">
         {children}
         <Toaster position="top-right" closeButton />
-      </>
+      </ThemeProvider>
     );
   }
 
   return (
-    <SidebarLayout>
-      {children}
-      <Toaster position="top-right" closeButton />
-    </SidebarLayout>
+    <ThemeProvider attribute="class" defaultTheme="light">
+      <SidebarLayout>
+        {children}
+        <Toaster position="top-right" closeButton />
+      </SidebarLayout>
+    </ThemeProvider>
   );
 }
