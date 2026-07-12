@@ -83,11 +83,11 @@ export default function TripForm({
         .then(([vehiclesRes, driversRes]) => {
           if (vehiclesRes.success && Array.isArray(vehiclesRes.vehicles)) {
             // Keep active and available vehicles for new trip creation
-            setVehicles(vehiclesRes.vehicles.filter((v) => v.status !== "RETIRED"));
+            setVehicles(vehiclesRes.vehicles.filter((v: Vehicle) => v.status !== "RETIRED"));
           }
           if (driversRes.success && Array.isArray(driversRes.drivers)) {
             // Keep active drivers
-            setDrivers(driversRes.drivers.filter((d) => d.isActive));
+            setDrivers(driversRes.drivers.filter((d: Driver) => d.isActive));
           }
         })
         .catch(() => {

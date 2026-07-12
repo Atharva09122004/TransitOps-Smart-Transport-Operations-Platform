@@ -19,18 +19,22 @@ export default function AppLayoutWrapper({
   if (isLoginPage) {
     return (
       <ThemeProvider attribute="class" defaultTheme="light">
-        {children}
-        <Toaster position="top-right" closeButton />
+        <SettingsProvider>
+          {children}
+          <Toaster position="top-right" closeButton />
+        </SettingsProvider>
       </ThemeProvider>
     );
   }
 
   return (
     <ThemeProvider attribute="class" defaultTheme="light">
-      <SidebarLayout>
-        {children}
-        <Toaster position="top-right" closeButton />
-      </SidebarLayout>
+      <SettingsProvider>
+        <SidebarLayout>
+          {children}
+          <Toaster position="top-right" closeButton />
+        </SidebarLayout>
+      </SettingsProvider>
     </ThemeProvider>
   );
 }

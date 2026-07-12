@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { useSettings } from "@/hooks/use-settings";
+import { exportAnalyticsPDF } from "@/utils/pdfExport";
 
 export default function ReportsPage() {
   const router = useRouter();
