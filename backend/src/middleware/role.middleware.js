@@ -1,13 +1,21 @@
-function roleMiddleware(...allowedRoles) {
+function requireRole(...allowedRoles) {
   return (req, res, next) => {
-    const userRole = req.user?.role;
-
-    if (!allowedRoles.length || allowedRoles.includes(userRole)) {
-      return next();
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
     }
 
-    return res.status(403).json({ message: "You do not have permission to access this resource." });
+    if (!allowedRoles.includes(req.user.role)) {
+      return res.status(403).json({
+        success: false,
+        message: "Forbidden",
+      });
+    }
+
+    return next();
   };
 }
 
-module.exports = roleMiddleware;
+module.exports = requireRole;

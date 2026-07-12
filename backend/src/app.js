@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const authRoutes = require("./routes/auth.routes");
 
 const app = express();
 
@@ -12,5 +13,7 @@ app.get("/", (req, res) => {
         message: "TransitOps API Running 🚚"
     });
 });
+
+app.use("/api/auth", authRoutes);
 
 module.exports = app;
