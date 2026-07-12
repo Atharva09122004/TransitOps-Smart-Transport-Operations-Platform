@@ -7,9 +7,11 @@ import { AnalyticsReport } from "@/types/report";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import axios from "axios";
+import { useSettings } from "@/hooks/use-settings";
 
 export default function ReportsPage() {
   const router = useRouter();
+  const { formatCurrency, convertKmToDisplay, distanceUnitLabel } = useSettings();
 
   // Reports data state
   const [report, setReport] = React.useState<AnalyticsReport | null>(null);
@@ -37,14 +39,13 @@ export default function ReportsPage() {
     loadReport();
   }, [loadReport]);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
+  const fuelEfficiencyDisplay = React.useMemo(() => {
+    if (!report?.summary?.fuelEfficiency) return "—";
+    const rawVal = parseFloat(report.summary.fuelEfficiency);
+    if (isNaN(rawVal)) return report.summary.fuelEfficiency;
+    const converted = convertKmToDisplay(rawVal);
+    return `${converted.toFixed(2)} ${distanceUnitLabel}/l`;
+  }, [report, convertKmToDisplay, distanceUnitLabel]);
 
   return (
     <div className="space-y-6">
@@ -143,7 +144,7 @@ export default function ReportsPage() {
               </div>
               <div>
                 <span className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-                  {report.summary.fuelEfficiency}
+                  {fuelEfficiencyDisplay}
                 </span>
               </div>
               <p className="text-[10px] text-zinc-400 dark:text-zinc-500">

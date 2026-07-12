@@ -18,9 +18,11 @@ import { Vehicle } from "@/types/vehicle";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import axios from "axios";
+import { useSettings } from "@/hooks/use-settings";
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { formatCurrency } = useSettings();
 
   // Dashboard Stats
   const [stats, setStats] = React.useState<DashboardStats | null>(null);
@@ -54,14 +56,7 @@ export default function DashboardPage() {
     loadData();
   }, [loadData]);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
+  // Dynamic currency logic loaded from hook
 
   // Calculate status breakdown from live vehicles list
   const activeFleet = vehicles.filter((v) => v.status !== "RETIRED");

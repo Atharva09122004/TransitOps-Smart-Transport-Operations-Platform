@@ -4,6 +4,7 @@ import * as React from "react";
 import { usePathname } from "next/navigation";
 import SidebarLayout from "./sidebar-layout";
 import { Toaster } from "sonner";
+import { SettingsProvider } from "@/hooks/use-settings";
 
 export default function AppLayoutWrapper({
   children
@@ -15,17 +16,19 @@ export default function AppLayoutWrapper({
 
   if (isLoginPage) {
     return (
-      <>
+      <SettingsProvider>
         {children}
         <Toaster position="top-right" closeButton />
-      </>
+      </SettingsProvider>
     );
   }
 
   return (
-    <SidebarLayout>
-      {children}
-      <Toaster position="top-right" closeButton />
-    </SidebarLayout>
+    <SettingsProvider>
+      <SidebarLayout>
+        {children}
+        <Toaster position="top-right" closeButton />
+      </SidebarLayout>
+    </SettingsProvider>
   );
 }

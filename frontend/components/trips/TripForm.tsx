@@ -19,6 +19,7 @@ import { Vehicle } from "@/types/vehicle";
 import { Driver } from "@/types/driver";
 import { Trip } from "@/types/trip";
 import { toast } from "sonner";
+import { useSettings } from "@/hooks/use-settings";
 
 // Zod Schema matching backend validation
 const createTripFormSchema = z.object({
@@ -53,6 +54,7 @@ export default function TripForm({
   tripToEdit,
 }: TripFormProps) {
   const isEditMode = !!tripToEdit;
+  const { convertKmToDisplay, convertDisplayToKm, distanceUnitLabel } = useSettings();
 
   // Selection states
   const [vehicles, setVehicles] = React.useState<Vehicle[]>([]);
@@ -114,7 +116,7 @@ export default function TripForm({
       setVehicleId(tripToEdit.vehicleId?.toString() || "");
       setDriverId(tripToEdit.driverId?.toString() || "");
       setCargoWeightKg(tripToEdit.cargoWeightKg.toString());
-      setPlannedDistanceKm(tripToEdit.plannedDistanceKm?.toString() || "");
+      setPlannedDistanceKm(tripToEdit.plannedDistanceKm ? convertKmToDisplay(tripToEdit.plannedDistanceKm).toString() : "");
       setEtaMinutes(tripToEdit.etaMinutes?.toString() || "");
     } else {
       setTripCode("");
@@ -127,7 +129,7 @@ export default function TripForm({
       setEtaMinutes("");
     }
     setFieldErrors({});
-  }, [tripToEdit, isOpen]);
+  }, [tripToEdit, isOpen, convertKmToDisplay]);
 
   if (!isOpen) return null;
 
@@ -144,7 +146,7 @@ export default function TripForm({
       vehicleId: Number(vehicleId),
       driverId: Number(driverId),
       cargoWeightKg: Number(cargoWeightKg),
-      plannedDistanceKm: Number(plannedDistanceKm),
+      plannedDistanceKm: convertDisplayToKm(Number(plannedDistanceKm)),
       etaMinutes: Number(etaMinutes),
     };
 
@@ -341,7 +343,7 @@ export default function TripForm({
             {/* Planned Distance */}
             <div className="space-y-1">
               <label className="text-[9.5px] font-semibold text-zinc-555 dark:text-zinc-400 uppercase tracking-wider block">
-                Distance (km)
+                Distance ({distanceUnitLabel})
               </label>
               <Input
                 type="number"

@@ -6,9 +6,31 @@ import { getSettings, updateSettings, SystemSettings, RBACRole, SettingsData } f
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import axios from "axios";
+import { useSettings } from "@/hooks/use-settings";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+const CURRENCIES = [
+  { value: "USD ($)", label: "USD ($) - United States Dollar" },
+  { value: "INR (Rs)", label: "INR (Rs) - Indian Rupee" },
+  { value: "EUR (€)", label: "EUR (€) - Euro" },
+  { value: "GBP (£)", label: "GBP (£) - British Pound" },
+  { value: "JPY (¥)", label: "JPY (¥) - Japanese Yen" },
+];
+
+const DISTANCE_UNITS = [
+  { value: "Kilometers", label: "Kilometers (km)" },
+  { value: "Miles", label: "Miles (mi)" },
+];
 
 export default function SettingsPage() {
   const router = useRouter();
+  const { refreshSettings } = useSettings();
 
   const [settingsData, setSettingsData] = React.useState<SettingsData | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
@@ -18,6 +40,22 @@ export default function SettingsPage() {
   const [depotName, setDepotName] = React.useState("");
   const [currency, setCurrency] = React.useState("");
   const [distanceUnit, setDistanceUnit] = React.useState("");
+
+  const currencyOptions = React.useMemo(() => {
+    const exists = CURRENCIES.some(c => c.value === currency);
+    if (!exists && currency) {
+      return [...CURRENCIES, { value: currency, label: currency }];
+    }
+    return CURRENCIES;
+  }, [currency]);
+
+  const distanceOptions = React.useMemo(() => {
+    const exists = DISTANCE_UNITS.some(u => u.value === distanceUnit);
+    if (!exists && distanceUnit) {
+      return [...DISTANCE_UNITS, { value: distanceUnit, label: distanceUnit }];
+    }
+    return DISTANCE_UNITS;
+  }, [distanceUnit]);
 
   const loadSettings = React.useCallback(async () => {
     setIsLoading(true);
@@ -47,6 +85,7 @@ export default function SettingsPage() {
     setIsSaving(true);
     try {
       await updateSettings({ depotName, currency, distanceUnit });
+      await refreshSettings();
       toast.success("Settings updated successfully!");
     } catch (error) {
       toast.error("Failed to update settings.");
@@ -105,22 +144,34 @@ export default function SettingsPage() {
 
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-zinc-700 dark:text-zinc-300 block">Currency</label>
-              <input 
-                type="text" 
-                value={currency}
-                onChange={(e) => setCurrency(e.target.value)}
-                className="w-full text-sm p-2 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-transparent dark:bg-zinc-950 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100"
-              />
+              <Select value={currency} onValueChange={(val) => setCurrency(val || "USD ($)")}>
+                <SelectTrigger className="w-full h-10 bg-transparent dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-sm focus-visible:ring-2 focus-visible:ring-zinc-900 rounded-lg">
+                  <SelectValue placeholder="Select Currency" />
+                </SelectTrigger>
+                <SelectContent className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-1">
+                  {currencyOptions.map((c) => (
+                    <SelectItem key={c.value} value={c.value}>
+                      {c.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-zinc-700 dark:text-zinc-300 block">Distance Unit</label>
-              <input 
-                type="text" 
-                value={distanceUnit}
-                onChange={(e) => setDistanceUnit(e.target.value)}
-                className="w-full text-sm p-2 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-transparent dark:bg-zinc-950 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100"
-              />
+              <Select value={distanceUnit} onValueChange={(val) => setDistanceUnit(val || "Kilometers")}>
+                <SelectTrigger className="w-full h-10 bg-transparent dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-sm focus-visible:ring-2 focus-visible:ring-zinc-900 rounded-lg">
+                  <SelectValue placeholder="Select Distance Unit" />
+                </SelectTrigger>
+                <SelectContent className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-1">
+                  {distanceOptions.map((u) => (
+                    <SelectItem key={u.value} value={u.value}>
+                      {u.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 

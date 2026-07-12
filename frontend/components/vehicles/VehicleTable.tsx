@@ -4,6 +4,7 @@ import * as React from "react";
 import { Vehicle } from "@/types/vehicle";
 import { Trash2, Edit2, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useSettings } from "@/hooks/use-settings";
 
 interface VehicleTableProps {
   vehicles: Vehicle[];
@@ -16,6 +17,8 @@ export default function VehicleTable({
   onEdit,
   onDelete
 }: VehicleTableProps) {
+  const { formatCurrency, formatDistance, distanceUnitLabel } = useSettings();
+
   const getStatusBadge = (status: Vehicle["status"]) => {
     switch (status) {
       case "AVAILABLE":
@@ -51,14 +54,7 @@ export default function VehicleTable({
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
+  // Dynamic currency logic loaded from hook
 
   if (vehicles.length === 0) {
     return (
@@ -86,7 +82,7 @@ export default function VehicleTable({
               <th className="p-4">Model Name</th>
               <th className="p-4">Type</th>
               <th className="p-4">Capacity (kg)</th>
-              <th className="p-4">Odometer (km)</th>
+              <th className="p-4">Odometer ({distanceUnitLabel})</th>
               <th className="p-4">Acquisition Cost</th>
               <th className="p-4">Status</th>
               <th className="p-4 text-right">Actions</th>
@@ -110,7 +106,7 @@ export default function VehicleTable({
                   {vehicle.capacityKg.toLocaleString()} kg
                 </td>
                 <td className="p-4 text-zinc-500 dark:text-zinc-400 font-mono">
-                  {vehicle.odometerKm.toLocaleString()} km
+                  {formatDistance(vehicle.odometerKm, 0)}
                 </td>
                 <td className="p-4 text-zinc-500 dark:text-zinc-400 font-mono">
                   {formatCurrency(vehicle.acquisitionCost)}

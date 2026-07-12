@@ -4,6 +4,7 @@ import * as React from "react";
 import { X, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useSettings } from "@/hooks/use-settings";
 
 interface CompleteTripDialogProps {
   isOpen: boolean;
@@ -20,6 +21,7 @@ export default function CompleteTripDialog({
   tripCode,
   isCompleting,
 }: CompleteTripDialogProps) {
+  const { convertDisplayToKm, distanceUnitLabel } = useSettings();
   const [actualDistanceKm, setActualDistanceKm] = React.useState("");
   const [error, setError] = React.useState("");
 
@@ -38,11 +40,11 @@ export default function CompleteTripDialog({
 
     const distance = Number(actualDistanceKm);
     if (isNaN(distance) || distance <= 0) {
-      setError("Actual distance must be a positive number greater than 0");
+      setError(`Actual distance must be a positive number greater than 0`);
       return;
     }
 
-    onConfirm(distance);
+    onConfirm(convertDisplayToKm(distance));
   };
 
   return (
@@ -70,7 +72,7 @@ export default function CompleteTripDialog({
 
           <div className="space-y-1">
             <label className="text-[10px] font-semibold text-zinc-550 dark:text-zinc-400 uppercase tracking-wider block">
-              Actual Distance Traveled (km)
+              Actual Distance Traveled ({distanceUnitLabel})
             </label>
             <Input
               type="number"

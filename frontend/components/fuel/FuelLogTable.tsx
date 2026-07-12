@@ -3,12 +3,15 @@
 import * as React from "react";
 import { FuelLog } from "@/types/fuel";
 import { ShieldAlert } from "lucide-react";
+import { useSettings } from "@/hooks/use-settings";
 
 interface FuelLogTableProps {
   logs: FuelLog[];
 }
 
 export default function FuelLogTable({ logs }: FuelLogTableProps) {
+  const { formatCurrency, formatDistance, distanceUnitLabel } = useSettings();
+
   const formatDate = (dateStr: string) => {
     try {
       const date = new Date(dateStr);
@@ -22,12 +25,7 @@ export default function FuelLogTable({ logs }: FuelLogTableProps) {
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(amount);
-  };
+  // Dynamic currency logic loaded from hook
 
   if (logs.length === 0) {
     return (
@@ -53,7 +51,7 @@ export default function FuelLogTable({ logs }: FuelLogTableProps) {
             <tr className="border-b border-zinc-100 dark:border-zinc-800 text-zinc-400 dark:text-zinc-550 font-medium">
               <th className="p-4">Vehicle</th>
               <th className="p-4">Log Date</th>
-              <th className="p-4">Odometer (km)</th>
+              <th className="p-4">Odometer ({distanceUnitLabel})</th>
               <th className="p-4">Fuel Quantity</th>
               <th className="p-4">Total Cost</th>
               <th className="p-4">Trip Code</th>
@@ -75,7 +73,7 @@ export default function FuelLogTable({ logs }: FuelLogTableProps) {
                   {formatDate(log.logDate)}
                 </td>
                 <td className="p-4 font-mono text-zinc-500 dark:text-zinc-400">
-                  {log.odometerKm.toLocaleString()} km
+                  {formatDistance(log.odometerKm, 0)}
                 </td>
                 <td className="p-4 text-zinc-500 dark:text-zinc-400 font-mono">
                   {log.liters.toLocaleString()} Liters

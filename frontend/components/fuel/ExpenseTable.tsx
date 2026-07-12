@@ -3,12 +3,15 @@
 import * as React from "react";
 import { Expense } from "@/types/expense";
 import { ShieldAlert } from "lucide-react";
+import { useSettings } from "@/hooks/use-settings";
 
 interface ExpenseTableProps {
   expenses: Expense[];
 }
 
 export default function ExpenseTable({ expenses }: ExpenseTableProps) {
+  const { formatCurrency } = useSettings();
+
   const formatDate = (dateStr: string) => {
     try {
       const date = new Date(dateStr);
@@ -22,12 +25,7 @@ export default function ExpenseTable({ expenses }: ExpenseTableProps) {
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(amount);
-  };
+  // Dynamic currency logic loaded from hook
 
   const getStatusBadge = (status: Expense["status"]) => {
     switch (status) {

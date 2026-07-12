@@ -18,10 +18,11 @@ import { MaintenanceRecord } from "@/types/maintenance";
 import { Vehicle } from "@/types/vehicle";
 import { toast } from "sonner";
 import axios from "axios";
+import { useSettings } from "@/hooks/use-settings";
 
 // Zod Schema matching backend validation
 const maintenanceFormSchema = z.object({
-  vehicleId: z.number({ required_error: "Vehicle is required" }).int().positive(),
+  vehicleId: z.number({ message: "Vehicle is required" }).int().positive(),
   serviceType: z.string().trim().min(2, "Service type must be at least 2 characters"),
   cost: z.number().nonnegative("Cost must be non-negative"),
   serviceDate: z.string().trim().min(1, "Service date is required").refine((val) => {
@@ -45,6 +46,7 @@ export default function MaintenanceForm({
   recordToEdit,
 }: MaintenanceFormProps) {
   const isEditMode = !!recordToEdit;
+  const { currencySymbol } = useSettings();
 
   // Active vehicles list
   const [vehicles, setVehicles] = React.useState<Vehicle[]>([]);
@@ -69,7 +71,7 @@ export default function MaintenanceForm({
         .then((res) => {
           if (res.success && Array.isArray(res.vehicles)) {
             // Keep only non-retired vehicles
-            setVehicles(res.vehicles.filter((v) => v.status !== "RETIRED"));
+            setVehicles(res.vehicles.filter((v: Vehicle) => v.status !== "RETIRED"));
           }
         })
         .catch(() => {
@@ -196,7 +198,7 @@ export default function MaintenanceForm({
             </label>
             <Select 
               value={vehicleId} 
-              onValueChange={setVehicleId}
+              onValueChange={(val) => setVehicleId(val || "")}
               disabled={isEditMode || loadingVehicles}
             >
               <SelectTrigger className="w-full h-10 flex justify-between items-center bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-sm focus-visible:border-zinc-900 rounded-md">
@@ -238,7 +240,7 @@ export default function MaintenanceForm({
             {/* Cost */}
             <div className="space-y-1">
               <label className="text-[10px] font-semibold text-zinc-555 dark:text-zinc-400 uppercase tracking-wider block">
-                Estimated Cost ($)
+                Estimated Cost ({currencySymbol})
               </label>
               <Input
                 type="number"

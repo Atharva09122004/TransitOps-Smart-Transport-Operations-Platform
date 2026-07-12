@@ -16,6 +16,7 @@ import { createVehicle, updateVehicle } from "@/services/vehicle";
 import { Vehicle } from "@/types/vehicle";
 import { toast } from "sonner";
 import axios from "axios";
+import { useSettings } from "@/hooks/use-settings";
 
 // Zod Schema matching backend validation requirements
 const vehicleFormSchema = z.object({
@@ -44,6 +45,7 @@ export default function VehicleForm({
   vehicleToEdit,
 }: VehicleFormProps) {
   const isEditMode = !!vehicleToEdit;
+  const { convertKmToDisplay, convertDisplayToKm, distanceUnitLabel, currencySymbol } = useSettings();
 
   // Form values state
   const [regNo, setRegNo] = React.useState("");
@@ -65,7 +67,7 @@ export default function VehicleForm({
       setModelName(vehicleToEdit.modelName);
       setType(vehicleToEdit.type);
       setCapacityKg(vehicleToEdit.capacityKg.toString());
-      setOdometerKm(vehicleToEdit.odometerKm.toString());
+      setOdometerKm(convertKmToDisplay(vehicleToEdit.odometerKm).toString());
       setAcquisitionCost(vehicleToEdit.acquisitionCost.toString());
       setStatus(vehicleToEdit.status);
     } else {
@@ -78,7 +80,7 @@ export default function VehicleForm({
       setStatus("AVAILABLE");
     }
     setFieldErrors({});
-  }, [vehicleToEdit, isOpen]);
+  }, [vehicleToEdit, isOpen, convertKmToDisplay]);
 
   if (!isOpen) return null;
 
@@ -93,7 +95,7 @@ export default function VehicleForm({
       modelName,
       type,
       capacityKg: Number(capacityKg),
-      odometerKm: Number(odometerKm || 0),
+      odometerKm: convertDisplayToKm(Number(odometerKm || 0)),
       acquisitionCost: Number(acquisitionCost || 0),
       status: isEditMode ? status : undefined,
     };
@@ -241,10 +243,10 @@ export default function VehicleForm({
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            {/* Odometer (Km) */}
+            {/* Odometer */}
             <div className="space-y-1">
               <label className="text-[10px] font-semibold text-zinc-555 dark:text-zinc-400 uppercase tracking-wider block">
-                Odometer (km)
+                Odometer ({distanceUnitLabel})
               </label>
               <Input
                 type="number"
@@ -262,7 +264,7 @@ export default function VehicleForm({
             {/* Acquisition Cost */}
             <div className="space-y-1">
               <label className="text-[10px] font-semibold text-zinc-555 dark:text-zinc-400 uppercase tracking-wider block">
-                Acquisition Cost ($)
+                Acquisition Cost ({currencySymbol})
               </label>
               <Input
                 type="number"

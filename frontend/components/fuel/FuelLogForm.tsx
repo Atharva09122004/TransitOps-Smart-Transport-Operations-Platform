@@ -16,17 +16,18 @@ import { getVehicles } from "@/services/vehicle";
 import { createFuelLog } from "@/services/fuel";
 import { Vehicle } from "@/types/vehicle";
 import { toast } from "sonner";
+import { useSettings } from "@/hooks/use-settings";
 
 const fuelFormSchema = z.object({
-  vehicleId: z.number({ required_error: "Vehicle is required" }).int().positive(),
+  vehicleId: z.number({ message: "Vehicle is required" }).int().positive(),
   tripId: z.number().int().positive().optional(),
   logDate: z.string().trim().min(1, "Date is required").refine((val) => {
     const date = new Date(val);
     return !Number.isNaN(date.getTime());
   }, "Please enter a valid date"),
-  odometerKm: z.number({ required_error: "Odometer is required" }).nonnegative("Odometer must be non-negative"),
-  liters: z.number({ required_error: "Liters is required" }).nonnegative("Liters must be non-negative"),
-  fuelCost: z.number({ required_error: "Fuel cost is required" }).nonnegative("Fuel cost must be non-negative"),
+  odometerKm: z.number({ message: "Odometer is required" }).nonnegative("Odometer must be non-negative"),
+  liters: z.number({ message: "Liters is required" }).nonnegative("Liters must be non-negative"),
+  fuelCost: z.number({ message: "Fuel cost is required" }).nonnegative("Fuel cost must be non-negative"),
   remarks: z.string().optional(),
 });
 
@@ -41,6 +42,7 @@ export default function FuelLogForm({
   onClose,
   onSuccess,
 }: FuelLogFormProps) {
+  const { convertDisplayToKm, formatDistance, distanceUnitLabel, currencySymbol } = useSettings();
   // Vehicle states
   const [vehicles, setVehicles] = React.useState<Vehicle[]>([]);
   const [loadingVehicles, setLoadingVehicles] = React.useState(false);
@@ -65,7 +67,7 @@ export default function FuelLogForm({
       getVehicles()
         .then((res) => {
           if (res.success && Array.isArray(res.vehicles)) {
-            setVehicles(res.vehicles.filter((v) => v.status !== "RETIRED"));
+            setVehicles(res.vehicles.filter((v: Vehicle) => v.status !== "RETIRED"));
           }
         })
         .catch(() => {
@@ -107,7 +109,7 @@ export default function FuelLogForm({
       vehicleId: Number(vehicleId),
       tripId: tripId ? Number(tripId) : undefined,
       logDate: logDate,
-      odometerKm: Number(odometerKm),
+      odometerKm: convertDisplayToKm(Number(odometerKm)),
       liters: Number(liters),
       fuelCost: Number(fuelCost),
       remarks: remarks || undefined,
@@ -168,14 +170,14 @@ export default function FuelLogForm({
             <label className="text-[10px] font-semibold text-zinc-550 dark:text-zinc-400 uppercase tracking-wider block">
               Vehicle
             </label>
-            <Select value={vehicleId} onValueChange={setVehicleId}>
+            <Select value={vehicleId} onValueChange={(val) => setVehicleId(val || "")}>
               <SelectTrigger className="w-full h-10 flex justify-between items-center bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-sm focus-visible:border-zinc-900 rounded-md">
                 <SelectValue placeholder={loadingVehicles ? "Loading Fleet..." : "Select Vehicle"} />
               </SelectTrigger>
               <SelectContent className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-1">
                 {vehicles.map((v) => (
                   <SelectItem key={v.id} value={v.id.toString()}>
-                    {v.regNo} ({v.modelName}) — Odo: {v.odometerKm} km
+                    {v.regNo} ({v.modelName}) — Odo: {formatDistance(v.odometerKm, 0)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -227,7 +229,7 @@ export default function FuelLogForm({
             {/* Odometer */}
             <div className="space-y-1">
               <label className="text-[10px] font-semibold text-zinc-555 dark:text-zinc-400 uppercase tracking-wider block">
-                Odo (km)
+                Odo ({distanceUnitLabel})
               </label>
               <Input
                 type="number"
@@ -266,7 +268,7 @@ export default function FuelLogForm({
             {/* Cost */}
             <div className="space-y-1">
               <label className="text-[10px] font-semibold text-zinc-555 dark:text-zinc-400 uppercase tracking-wider block">
-                Cost ($)
+                Cost ({currencySymbol})
               </label>
               <Input
                 type="number"

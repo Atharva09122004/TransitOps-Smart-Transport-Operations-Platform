@@ -4,6 +4,7 @@ import * as React from "react";
 import { MaintenanceRecord } from "@/types/maintenance";
 import { CheckCircle, Edit2, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useSettings } from "@/hooks/use-settings";
 
 interface MaintenanceTableProps {
   records: MaintenanceRecord[];
@@ -16,6 +17,8 @@ export default function MaintenanceTable({
   onEdit,
   onComplete
 }: MaintenanceTableProps) {
+  const { formatCurrency } = useSettings();
+
   const getStatusBadge = (status: MaintenanceRecord["status"]) => {
     switch (status) {
       case "IN_SHOP":
@@ -52,14 +55,7 @@ export default function MaintenanceTable({
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
+  // Dynamic currency logic loaded from hook
 
   if (records.length === 0) {
     return (

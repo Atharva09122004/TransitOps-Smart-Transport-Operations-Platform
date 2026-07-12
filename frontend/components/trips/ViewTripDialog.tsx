@@ -5,6 +5,7 @@ import { X, Loader2, Compass, Truck, User, Fuel, DollarSign, Sparkles } from "lu
 import { getTripById } from "@/services/trip";
 import { Trip } from "@/types/trip";
 import { toast } from "sonner";
+import { useSettings } from "@/hooks/use-settings";
 
 interface ViewTripDialogProps {
   isOpen: boolean;
@@ -17,6 +18,7 @@ export default function ViewTripDialog({
   onClose,
   tripId,
 }: ViewTripDialogProps) {
+  const { formatCurrency, formatDistance } = useSettings();
   const [trip, setTrip] = React.useState<Trip | null>(null);
   const [isLoading, setIsLoading] = React.useState(false);
 
@@ -55,14 +57,6 @@ export default function ViewTripDialog({
     } catch {
       return dateStr;
     }
-  };
-
-  const formatCurrency = (amount?: number | null) => {
-    if (amount === undefined || amount === null) return "—";
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(amount);
   };
 
   return (
@@ -112,13 +106,13 @@ export default function ViewTripDialog({
               <div>
                 <span className="text-[10px] text-zinc-400 uppercase tracking-wider block font-semibold">Planned distance</span>
                 <span className="font-semibold text-zinc-850 dark:text-zinc-200 mt-1 block">
-                  {trip.plannedDistanceKm ? `${trip.plannedDistanceKm.toLocaleString()} km` : "—"}
+                  {trip.plannedDistanceKm ? formatDistance(trip.plannedDistanceKm) : "—"}
                 </span>
               </div>
               <div>
                 <span className="text-[10px] text-zinc-400 uppercase tracking-wider block font-semibold">Actual distance</span>
                 <span className="font-semibold text-zinc-850 dark:text-zinc-200 mt-1 block">
-                  {trip.actualDistanceKm ? `${trip.actualDistanceKm.toLocaleString()} km` : "—"}
+                  {trip.actualDistanceKm ? formatDistance(trip.actualDistanceKm) : "—"}
                 </span>
               </div>
             </div>
