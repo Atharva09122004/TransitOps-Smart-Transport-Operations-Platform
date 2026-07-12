@@ -25,8 +25,8 @@ const createTripFormSchema = z.object({
   tripCode: z.string().trim().min(1, "Trip code is required"),
   source: z.string().trim().min(1, "Source is required"),
   destination: z.string().trim().min(1, "Destination is required"),
-  vehicleId: z.number({ required_error: "Vehicle is required" }).int().positive(),
-  driverId: z.number({ required_error: "Driver is required" }).int().positive(),
+  vehicleId: z.number({ message: "Vehicle is required" }).int().positive(),
+  driverId: z.number({ message: "Driver is required" }).int().positive(),
   cargoWeightKg: z.number().positive("Cargo weight must be greater than 0"),
   plannedDistanceKm: z.number().positive("Planned distance must be greater than 0"),
   etaMinutes: z.number().int().positive("ETA must be greater than 0"),
@@ -80,12 +80,20 @@ export default function TripForm({
       Promise.all([getVehicles(), getDrivers()])
         .then(([vehiclesRes, driversRes]) => {
           if (vehiclesRes.success && Array.isArray(vehiclesRes.vehicles)) {
-            // Keep active and available vehicles for new trip creation
-            setVehicles(vehiclesRes.vehicles.filter((v) => v.status !== "RETIRED"));
+            // Keep only AVAILABLE vehicles for new trip creation (or current assigned vehicle in edit mode)
+            setVehicles(
+              vehiclesRes.vehicles.filter(
+                (v: Vehicle) => v.status === "AVAILABLE" || (isEditMode && v.id === Number(tripToEdit?.vehicleId))
+              )
+            );
           }
           if (driversRes.success && Array.isArray(driversRes.drivers)) {
-            // Keep active drivers
-            setDrivers(driversRes.drivers.filter((d) => d.isActive));
+            // Keep active and AVAILABLE drivers (or current assigned driver in edit mode)
+            setDrivers(
+              driversRes.drivers.filter(
+                (d: Driver) => d.isActive && (d.status === "AVAILABLE" || (isEditMode && d.id === Number(tripToEdit?.driverId)))
+              )
+            );
           }
         })
         .catch(() => {
@@ -265,7 +273,7 @@ export default function TripForm({
             </label>
             <Select 
               value={vehicleId} 
-              onValueChange={setVehicleId}
+              onValueChange={(val) => setVehicleId(val || "")}
               disabled={isEditMode || loadingAssets}
             >
               <SelectTrigger className="w-full h-10 flex justify-between items-center bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-sm focus-visible:border-zinc-900 rounded-md">
@@ -291,7 +299,7 @@ export default function TripForm({
             </label>
             <Select 
               value={driverId} 
-              onValueChange={setDriverId}
+              onValueChange={(val) => setDriverId(val || "")}
               disabled={isEditMode || loadingAssets}
             >
               <SelectTrigger className="w-full h-10 flex justify-between items-center bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-sm focus-visible:border-zinc-900 rounded-md">
