@@ -1,7 +1,11 @@
 "use client";
 
 import * as React from "react";
+<<<<<<< Updated upstream
 import { Plus, Loader2, RefreshCw, Fuel, DollarSign, Download } from "lucide-react";
+=======
+import { Plus, Loader2, RefreshCw, Fuel, DollarSign, Search, ArrowUpDown } from "lucide-react";
+>>>>>>> Stashed changes
 import { Button } from "@/components/ui/button";
 import FuelLogTable from "@/components/fuel/FuelLogTable";
 import ExpenseTable from "@/components/fuel/ExpenseTable";
@@ -50,6 +54,43 @@ export default function FuelExpensesPage() {
     } finally {
       setIsPdfGenerating(false);
     }
+  };
+
+  // Search & sort state (shared)
+  const [search, setSearch] = React.useState("");
+  const [fuelSortBy, setFuelSortBy] = React.useState<"logDate" | "liters" | "fuelCost">("logDate");
+  const [fuelSortAsc, setFuelSortAsc] = React.useState(false);
+
+  const filteredFuelLogs = React.useMemo(() => {
+    let result = [...fuelLogs];
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      result = result.filter(
+        (l) =>
+          String(l.vehicleId).includes(q) ||
+          (l.remarks || "").toLowerCase().includes(q)
+      );
+    }
+    result.sort((a, b) => {
+      const av = String(a[fuelSortBy] ?? "");
+      const bv = String(b[fuelSortBy] ?? "");
+      return fuelSortAsc ? av.localeCompare(bv) : bv.localeCompare(av);
+    });
+    return result;
+  }, [fuelLogs, search, fuelSortBy, fuelSortAsc]);
+
+  const filteredExpenses = React.useMemo(() => {
+    let result = [...expenses];
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      result = result.filter((e) => e.status.toLowerCase().includes(q));
+    }
+    return result;
+  }, [expenses, search]);
+
+  const toggleFuelSort = (col: typeof fuelSortBy) => {
+    if (fuelSortBy === col) setFuelSortAsc((p) => !p);
+    else { setFuelSortBy(col); setFuelSortAsc(true); }
   };
 
   // Load Fuel Logs
@@ -200,6 +241,39 @@ export default function FuelExpensesPage() {
         </button>
       </div>
 
+      {/* Search & Sort Controls */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-zinc-400 pointer-events-none" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); }}
+            placeholder={activeTab === "FUEL" ? "Search by vehicle, remarks..." : "Search by expense status..."}
+            className="h-9 w-full pl-9 pr-4 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-600 transition-colors text-zinc-800 dark:text-zinc-200 placeholder:text-zinc-400"
+          />
+        </div>
+        {activeTab === "FUEL" && (
+          <div className="flex gap-2">
+            {(["logDate", "liters", "fuelCost"] as const).map((col) => (
+              <button
+                key={col}
+                onClick={() => toggleFuelSort(col)}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-md border text-xs font-medium transition-colors ${
+                  fuelSortBy === col
+                    ? "border-zinc-900 dark:border-zinc-100 bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-950"
+                    : "border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                }`}
+              >
+                <ArrowUpDown className="size-3" />
+                {col === "logDate" ? "Date" : col === "liters" ? "Liters" : "Cost"}
+                {fuelSortBy === col && <span className="ml-0.5">{fuelSortAsc ? "↑" : "↓"}</span>}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Tab Contents */}
       {activeTab === "FUEL" ? (
         loadingFuel && fuelLogs.length === 0 ? (
@@ -208,7 +282,7 @@ export default function FuelExpensesPage() {
             <span className="text-xs text-zinc-500 dark:text-zinc-400">Loading fuel logs...</span>
           </div>
         ) : (
-          <FuelLogTable logs={fuelLogs} />
+          <FuelLogTable logs={filteredFuelLogs} />
         )
       ) : loadingExpenses && expenses.length === 0 ? (
         <div className="flex flex-col items-center justify-center p-20 space-y-3 bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800 rounded-xl">
@@ -216,7 +290,7 @@ export default function FuelExpensesPage() {
           <span className="text-xs text-zinc-500 dark:text-zinc-400">Loading trip expenses...</span>
         </div>
       ) : (
-        <ExpenseTable expenses={expenses} />
+        <ExpenseTable expenses={filteredExpenses} />
       )}
 
       {/* Forms Popups */}

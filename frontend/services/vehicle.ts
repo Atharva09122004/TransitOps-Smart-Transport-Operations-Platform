@@ -17,7 +17,10 @@ export interface VehicleFilters {
 }
 
 export const getVehicles = (filters?: VehicleFilters) => {
-  return api.get("/vehicles", { params: filters }).then((res) => res.data);
+  return api.get("/vehicles", { params: filters }).then((res) => ({
+    ...res.data,
+    data: res.data.vehicles ?? res.data.data ?? [],
+  }));
 };
 
 export const getVehicle = (id: number) => {
