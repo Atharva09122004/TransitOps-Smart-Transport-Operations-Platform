@@ -8,13 +8,72 @@ import {
   Compass,
   Wrench,
   Activity,
-  AlertCircle,
-  ChevronDown
+  Loader2,
+  RefreshCw,
+  DollarSign
 } from "lucide-react";
+import { getDashboardStats, DashboardStats } from "@/services/dashboard";
+import { getVehicles } from "@/services/vehicle";
+import { Vehicle } from "@/types/vehicle";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import axios from "axios";
 
 export default function DashboardPage() {
-  const [vehicleTypeFilter, setVehicleTypeFilter] = React.useState("All");
-  const [statusFilter, setStatusFilter] = React.useState("All");
+  const router = useRouter();
+
+  // Dashboard Stats
+  const [stats, setStats] = React.useState<DashboardStats | null>(null);
+  const [vehicles, setVehicles] = React.useState<Vehicle[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
+
+  const loadData = React.useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const [statsData, vehiclesData] = await Promise.all([
+        getDashboardStats(),
+        getVehicles()
+      ]);
+      setStats(statsData);
+      if (vehiclesData.success && Array.isArray(vehiclesData.vehicles)) {
+        setVehicles(vehiclesData.vehicles);
+      }
+    } catch (error: any) {
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        toast.error("Unauthorized session. Redirecting to login...");
+        router.push("/login");
+        return;
+      }
+      toast.error("Failed to load dashboard metrics.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [router]);
+
+  React.useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  // Calculate status breakdown from live vehicles list
+  const activeFleet = vehicles.filter((v) => v.status !== "RETIRED");
+  const totalActive = activeFleet.length;
+  
+  const countAvailable = activeFleet.filter((v) => v.status === "AVAILABLE").length;
+  const countOnTrip = activeFleet.filter((v) => v.status === "ON_TRIP").length;
+  const countInShop = activeFleet.filter((v) => v.status === "IN_SHOP").length;
+
+  const pctAvailable = totalActive > 0 ? Math.round((countAvailable / totalActive) * 100) : 0;
+  const pctOnTrip = totalActive > 0 ? Math.round((countOnTrip / totalActive) * 100) : 0;
+  const pctInShop = totalActive > 0 ? Math.round((countInShop / totalActive) * 100) : 0;
 
   return (
     <div className="space-y-6">
@@ -28,259 +87,228 @@ export default function DashboardPage() {
             Real-time logistical tracking, routing metrics, and resource diagnostics.
           </p>
         </div>
-      </div>
-
-      {/* Excalidraw Filters panel */}
-      <div className="flex flex-wrap items-center gap-3 bg-white dark:bg-zinc-900 p-4 border border-zinc-200/60 dark:border-zinc-800 rounded-lg">
-        <span className="text-[10px] uppercase tracking-wider font-bold text-zinc-400 block sm:inline">
-          Filters
-        </span>
-        <div className="flex flex-wrap gap-2.5">
-          {/* Vehicle Type Filter */}
-          <div className="flex items-center gap-1.5 border border-zinc-200 dark:border-zinc-800 px-2 py-1 rounded bg-zinc-50/50 dark:bg-zinc-950/30 text-xs">
-            <span className="text-zinc-500">Vehicle Type:</span>
-            <select
-              value={vehicleTypeFilter}
-              onChange={(e) => setVehicleTypeFilter(e.target.value)}
-              className="bg-transparent font-medium text-zinc-800 dark:text-zinc-200 outline-none cursor-pointer"
-            >
-              <option value="All">All</option>
-              <option value="VAN">Van</option>
-              <option value="TRUCK">Truck</option>
-              <option value="MINI">Mini</option>
-            </select>
-          </div>
-
-          {/* Status Filter */}
-          <div className="flex items-center gap-1.5 border border-zinc-200 dark:border-zinc-800 px-2 py-1 rounded bg-zinc-50/50 dark:bg-zinc-950/30 text-xs">
-            <span className="text-zinc-500">Status:</span>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="bg-transparent font-medium text-zinc-800 dark:text-zinc-200 outline-none cursor-pointer"
-            >
-              <option value="All">All</option>
-              <option value="AVAILABLE">Available</option>
-              <option value="ON_TRIP">On Trip</option>
-              <option value="IN_SHOP">In Shop</option>
-            </select>
-          </div>
-
-          {/* Region Filter placeholder */}
-          <div className="flex items-center gap-1.5 border border-zinc-200 dark:border-zinc-800 px-2 py-1 rounded bg-zinc-50/50 dark:bg-zinc-950/30 text-xs text-zinc-400">
-            <span>Region: All</span>
-            <ChevronDown className="size-3" />
-          </div>
+        <div>
+          <button
+            onClick={loadData}
+            disabled={isLoading}
+            className="p-2 border border-zinc-200 dark:border-zinc-800 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 dark:text-zinc-300 disabled:opacity-50 transition-colors"
+            title="Refresh dashboard stats"
+          >
+            <RefreshCw className={`size-4 ${isLoading ? "animate-spin" : ""}`} />
+          </button>
         </div>
       </div>
 
-      {/* Metrics Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Active Vehicles */}
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800 p-5 rounded-lg flex items-center justify-between shadow-xs">
-          <div className="space-y-1">
-            <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider block">
-              Active Vehicles
-            </span>
-            <span className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">53</span>
+      {isLoading && !stats ? (
+        <div className="flex flex-col items-center justify-center p-32 bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800 rounded-xl space-y-3">
+          <Loader2 className="size-8 text-zinc-400 animate-spin" />
+          <span className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">Aggregating live operations...</span>
+        </div>
+      ) : !stats ? (
+        <div className="flex flex-col items-center justify-center p-12 text-center bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800 rounded-xl space-y-3">
+          <div className="p-3 bg-red-100 text-red-500 dark:bg-red-950/20 dark:text-red-400 rounded-full">
+            <Activity className="size-6" />
           </div>
-          <div className="p-2 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-md">
-            <Truck className="size-5" />
+          <div className="space-y-1">
+            <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">Failed to load metrics</h3>
+            <p className="text-xs text-zinc-450">We encountered an issue fetching real-time dashboard data.</p>
           </div>
         </div>
+      ) : (
+        <div className="space-y-6 animate-in fade-in duration-300">
+          
+          {/* Metrics Cards Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Active Vehicles */}
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800 p-5 rounded-xl flex items-center justify-between shadow-2xs">
+              <div className="space-y-1">
+                <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider block">
+                  Active Fleet Size
+                </span>
+                <span className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">
+                  {stats.activeVehicles}
+                </span>
+              </div>
+              <div className="p-2 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-md">
+                <Truck className="size-5" />
+              </div>
+            </div>
 
-        {/* Available Vehicles */}
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800 p-5 rounded-lg flex items-center justify-between shadow-xs">
-          <div className="space-y-1">
-            <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider block">
-              Available Vehicles
-            </span>
-            <span className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">42</span>
-          </div>
-          <div className="p-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-md">
-            <Activity className="size-5" />
-          </div>
-        </div>
+            {/* In Maintenance */}
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800 p-5 rounded-xl flex items-center justify-between shadow-2xs">
+              <div className="space-y-1">
+                <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider block">
+                  Vehicles In Shop
+                </span>
+                <span className={`text-2xl font-bold ${stats.vehiclesInShop > 0 ? "text-amber-500" : "text-zinc-900 dark:text-zinc-50"}`}>
+                  {stats.vehiclesInShop}
+                </span>
+              </div>
+              <div className="p-2 bg-amber-500/10 text-amber-500 rounded-md">
+                <Wrench className="size-5" />
+              </div>
+            </div>
 
-        {/* Vehicles in Maintenance */}
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800 p-5 rounded-lg flex items-center justify-between shadow-xs">
-          <div className="space-y-1">
-            <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider block">
-              In Maintenance
-            </span>
-            <span className="text-2xl font-bold text-amber-500">05</span>
-          </div>
-          <div className="p-2 bg-amber-500/10 text-amber-500 rounded-md">
-            <Wrench className="size-5" />
-          </div>
-        </div>
+            {/* Drivers Available */}
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800 p-5 rounded-xl flex items-center justify-between shadow-2xs">
+              <div className="space-y-1">
+                <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider block">
+                  Drivers Available
+                </span>
+                <span className="text-2xl font-bold text-teal-600 dark:text-teal-400">
+                  {stats.driversAvailable}
+                </span>
+              </div>
+              <div className="p-2 bg-teal-500/10 text-teal-600 dark:text-teal-400 rounded-md">
+                <User className="size-5" />
+              </div>
+            </div>
 
-        {/* Active Trips */}
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800 p-5 rounded-lg flex items-center justify-between shadow-xs">
-          <div className="space-y-1">
-            <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider block">
-              Active / Pending
-            </span>
-            <span className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">18 / 09</span>
+            {/* Dispatched Trips */}
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800 p-5 rounded-xl flex items-center justify-between shadow-2xs">
+              <div className="space-y-1">
+                <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider block">
+                  Active Trips
+                </span>
+                <span className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
+                  {stats.activeTrips}
+                </span>
+              </div>
+              <div className="p-2 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-md">
+                <Compass className="size-5" />
+              </div>
+            </div>
           </div>
-          <div className="p-2 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-md">
-            <Compass className="size-5" />
-          </div>
-        </div>
-      </div>
 
-      {/* Second Row: Drivers on Duty & Utilization */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Drivers Card */}
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800 p-5 rounded-lg flex items-center justify-between shadow-xs">
-          <div className="space-y-1">
-            <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider block">
-              Drivers On Duty
-            </span>
-            <span className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">26</span>
-          </div>
-          <div className="p-2 bg-teal-500/10 text-teal-600 dark:text-teal-400 rounded-md">
-            <User className="size-5" />
-          </div>
-        </div>
+          {/* Second Row: Fleet Utilization & Operational Costs */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            
+            {/* Utilization Card */}
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800 p-5 rounded-xl flex items-center justify-between shadow-2xs md:col-span-1">
+              <div className="space-y-1 w-full">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider block">
+                    Fleet Utilization Rate
+                  </span>
+                  <span className="text-sm font-bold text-zinc-700 dark:text-zinc-300">
+                    {stats.fleetUtilization}%
+                  </span>
+                </div>
+                <div className="w-full bg-zinc-150 dark:bg-zinc-850 h-2.5 rounded-full overflow-hidden mt-2">
+                  <div 
+                    className="bg-zinc-900 dark:bg-zinc-50 h-full rounded-full transition-all duration-500" 
+                    style={{ width: `${stats.fleetUtilization}%` }} 
+                  />
+                </div>
+              </div>
+            </div>
 
-        {/* Utilization Card */}
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800 p-5 rounded-lg flex items-center justify-between shadow-xs">
-          <div className="space-y-1 w-full">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider block">
-                Fleet Utilization
+            {/* Fuel Cost Sum */}
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800 p-5 rounded-xl flex items-center justify-between shadow-2xs">
+              <div className="space-y-1">
+                <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider block">
+                  Total Fuel Spending
+                </span>
+                <span className="text-xl font-bold text-zinc-900 dark:text-zinc-50">
+                  {formatCurrency(stats.fuelCost)}
+                </span>
+              </div>
+              <div className="p-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-650 dark:text-zinc-350 rounded-md">
+                <DollarSign className="size-4.5" />
+              </div>
+            </div>
+
+            {/* Maintenance Cost Sum */}
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800 p-5 rounded-xl flex items-center justify-between shadow-2xs">
+              <div className="space-y-1">
+                <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider block">
+                  Maintenance Expenses
+                </span>
+                <span className="text-xl font-bold text-zinc-900 dark:text-zinc-50">
+                  {formatCurrency(stats.maintenanceCost)}
+                </span>
+              </div>
+              <div className="p-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-650 dark:text-zinc-350 rounded-md">
+                <Wrench className="size-4.5" />
+              </div>
+            </div>
+
+          </div>
+
+          {/* Third Row: Recent Trips & Status Breakdown Chart */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            {/* Live Vehicle Status Breakdown */}
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800 rounded-xl shadow-2xs p-5 lg:col-span-1 space-y-5">
+              <span className="text-[10px] font-semibold text-zinc-450 uppercase tracking-wider block">
+                Active Fleet Status Breakdown
               </span>
-              <span className="text-sm font-bold text-zinc-700 dark:text-zinc-300">81%</span>
+
+              <div className="space-y-4">
+                {/* Available */}
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-zinc-600 dark:text-zinc-450 font-medium">Available</span>
+                    <span className="font-semibold text-zinc-800 dark:text-zinc-200">{pctAvailable}% ({countAvailable})</span>
+                  </div>
+                  <div className="w-full bg-zinc-100 dark:bg-zinc-850 h-2 rounded-full overflow-hidden">
+                    <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${pctAvailable}%` }} />
+                  </div>
+                </div>
+
+                {/* On Trip */}
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-zinc-600 dark:text-zinc-455 font-medium">On Trip</span>
+                    <span className="font-semibold text-zinc-800 dark:text-zinc-200">{pctOnTrip}% ({countOnTrip})</span>
+                  </div>
+                  <div className="w-full bg-zinc-100 dark:bg-zinc-850 h-2 rounded-full overflow-hidden">
+                    <div className="bg-blue-500 h-full rounded-full" style={{ width: `${pctOnTrip}%` }} />
+                  </div>
+                </div>
+
+                {/* In Shop */}
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-zinc-600 dark:text-zinc-455 font-medium">In Shop (Maintenance)</span>
+                    <span className="font-semibold text-zinc-800 dark:text-zinc-200">{pctInShop}% ({countInShop})</span>
+                  </div>
+                  <div className="w-full bg-zinc-100 dark:bg-zinc-850 h-2 rounded-full overflow-hidden">
+                    <div className="bg-amber-500 h-full rounded-full" style={{ width: `${pctInShop}%` }} />
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="w-full bg-zinc-100 dark:bg-zinc-800 h-2.5 rounded-full overflow-hidden mt-2">
-              <div className="bg-zinc-900 dark:bg-zinc-100 h-full rounded-full" style={{ width: "81%" }} />
+
+            {/* Static Logistical Map / Quick Reference (Spans 2) */}
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800 rounded-xl shadow-2xs p-5 lg:col-span-2 space-y-4">
+              <span className="text-[10px] font-semibold text-zinc-450 uppercase tracking-wider block">
+                Quick Guide & Operations Overview
+              </span>
+              <div className="text-xs space-y-3.5 text-zinc-600 dark:text-zinc-400">
+                <p>
+                  Welcome to the **TransitOps Command Portal**. This system integrates direct vehicle diagnostic states, refueling inputs, and financial operations.
+                </p>
+                <div className="grid grid-cols-2 gap-3.5 pt-2">
+                  <div className="p-3 bg-zinc-50 dark:bg-zinc-950/20 border border-zinc-100 dark:border-zinc-850 rounded-lg space-y-1">
+                    <h4 className="font-semibold text-zinc-850 dark:text-zinc-150">Fleet Refueling</h4>
+                    <p className="text-[10.5px] text-zinc-450 leading-relaxed">
+                      Entering refueling records instantly updates vehicle odometers across the fleet logs.
+                    </p>
+                  </div>
+                  <div className="p-3 bg-zinc-50 dark:bg-zinc-950/20 border border-zinc-100 dark:border-zinc-850 rounded-lg space-y-1">
+                    <h4 className="font-semibold text-zinc-850 dark:text-zinc-150">Asset Maintenance</h4>
+                    <p className="text-[10.5px] text-zinc-450 leading-relaxed">
+                      Registering repair jobs automatically toggles vehicle availability to `In Shop`.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
+
           </div>
         </div>
-      </div>
-
-      {/* Third Row: Recent Trips & Status Chart */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Recent Trips Table */}
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800 rounded-lg shadow-xs p-5 lg:col-span-2 space-y-4">
-          <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider block">
-            Recent Trips
-          </span>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr className="border-b border-zinc-100 dark:border-zinc-800 text-zinc-400 font-medium">
-                  <th className="py-2.5">Trip Code</th>
-                  <th className="py-2.5">Vehicle</th>
-                  <th className="py-2.5">Driver</th>
-                  <th className="py-2.5">Status</th>
-                  <th className="py-2.5 text-right">ETA</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-100/50 dark:divide-zinc-850">
-                <tr className="text-zinc-700 dark:text-zinc-300">
-                  <td className="py-3 font-medium">TR001</td>
-                  <td className="py-3">VAN-05</td>
-                  <td className="py-3">Alex</td>
-                  <td className="py-3">
-                    <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 font-medium text-[10px]">
-                      On Trip
-                    </span>
-                  </td>
-                  <td className="py-3 text-right text-zinc-500">45 min</td>
-                </tr>
-                <tr className="text-zinc-700 dark:text-zinc-300">
-                  <td className="py-3 font-medium">TR002</td>
-                  <td className="py-3">TRK-12</td>
-                  <td className="py-3">John</td>
-                  <td className="py-3">
-                    <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-medium text-[10px]">
-                      Completed
-                    </span>
-                  </td>
-                  <td className="py-3 text-right text-zinc-400">—</td>
-                </tr>
-                <tr className="text-zinc-700 dark:text-zinc-300">
-                  <td className="py-3 font-medium">TR003</td>
-                  <td className="py-3">MINI-08</td>
-                  <td className="py-3">Priya</td>
-                  <td className="py-3">
-                    <span className="px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-medium text-[10px]">
-                      Dispatched
-                    </span>
-                  </td>
-                  <td className="py-3 text-right text-zinc-500">1h 10m</td>
-                </tr>
-                <tr className="text-zinc-700 dark:text-zinc-300">
-                  <td className="py-3 font-medium">TR004</td>
-                  <td className="py-3">Unassigned</td>
-                  <td className="py-3">Unassigned</td>
-                  <td className="py-3">
-                    <span className="px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 font-medium text-[10px]">
-                      Draft
-                    </span>
-                  </td>
-                  <td className="py-3 text-right text-zinc-400">Awaiting vehicle</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Vehicle Status Graph */}
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800 rounded-lg shadow-xs p-5 space-y-5">
-          <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider block">
-            Vehicle Status Breakdown
-          </span>
-
-          <div className="space-y-4">
-            {/* Available */}
-            <div className="space-y-1">
-              <div className="flex items-center justify-between text-[11px]">
-                <span className="text-zinc-600 dark:text-zinc-400">Available</span>
-                <span className="font-semibold text-zinc-800 dark:text-zinc-200">55%</span>
-              </div>
-              <div className="w-full bg-zinc-100 dark:bg-zinc-800 h-2 rounded-full overflow-hidden">
-                <div className="bg-emerald-500 h-full rounded-full" style={{ width: "55%" }} />
-              </div>
-            </div>
-
-            {/* On Trip */}
-            <div className="space-y-1">
-              <div className="flex items-center justify-between text-[11px]">
-                <span className="text-zinc-600 dark:text-zinc-400">On Trip</span>
-                <span className="font-semibold text-zinc-800 dark:text-zinc-200">30%</span>
-              </div>
-              <div className="w-full bg-zinc-100 dark:bg-zinc-800 h-2 rounded-full overflow-hidden">
-                <div className="bg-blue-500 h-full rounded-full" style={{ width: "30%" }} />
-              </div>
-            </div>
-
-            {/* In Shop */}
-            <div className="space-y-1">
-              <div className="flex items-center justify-between text-[11px]">
-                <span className="text-zinc-600 dark:text-zinc-400">In Shop</span>
-                <span className="font-semibold text-zinc-800 dark:text-zinc-200">10%</span>
-              </div>
-              <div className="w-full bg-zinc-100 dark:bg-zinc-800 h-2 rounded-full overflow-hidden">
-                <div className="bg-amber-500 h-full rounded-full" style={{ width: "10%" }} />
-              </div>
-            </div>
-
-            {/* Retired */}
-            <div className="space-y-1">
-              <div className="flex items-center justify-between text-[11px]">
-                <span className="text-zinc-600 dark:text-zinc-400">Retired</span>
-                <span className="font-semibold text-zinc-800 dark:text-zinc-200">5%</span>
-              </div>
-              <div className="w-full bg-zinc-100 dark:bg-zinc-800 h-2 rounded-full overflow-hidden">
-                <div className="bg-red-500 h-full rounded-full" style={{ width: "5%" }} />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      )}
     </div>
   );
 }
