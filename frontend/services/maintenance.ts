@@ -10,7 +10,10 @@ export interface MaintenanceInput {
 }
 
 export const getMaintenanceRecords = (): Promise<{ success: boolean; data: MaintenanceRecord[] }> => {
-  return api.get("/maintenance").then((res) => res.data);
+  return api.get("/maintenance").then((res) => ({
+    success: res.data.success,
+    data: res.data.records,
+  }));
 };
 
 export const createMaintenance = (data: MaintenanceInput): Promise<{ success: boolean; data: MaintenanceRecord }> => {

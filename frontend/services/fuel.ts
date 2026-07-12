@@ -12,7 +12,10 @@ export interface FuelLogInput {
 }
 
 export const getFuelLogs = (): Promise<{ success: boolean; data: FuelLog[] }> => {
-  return api.get("/fuel").then((res) => res.data);
+  return api.get("/fuel").then((res) => ({
+    success: res.data.success,
+    data: res.data.logs,
+  }));
 };
 
 export const createFuelLog = (data: FuelLogInput): Promise<{ success: boolean; data: FuelLog }> => {
