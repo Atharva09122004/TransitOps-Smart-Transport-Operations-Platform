@@ -87,3 +87,5 @@ Seeded users:
 
 - Prisma client is configured in [backend/src/config/prisma.js](backend/src/config/prisma.js).
 - The frontend currently contains route placeholders for login, dashboard, vehicles, drivers, trips, maintenance, fuel, and reports.
+
+# --- latest ---
